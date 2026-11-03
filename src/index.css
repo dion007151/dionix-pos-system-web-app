@@ -716,6 +716,8 @@
 
 @media print {
 
+  body.printing-masterlist,
+  body:has(#printable-masterlist),
   body.printing-buying-list,
   body:has(#printable-buying-list) {
     background: #fff !important;
@@ -731,6 +733,8 @@
   }
 
   /* Completely eliminate anything outside active print document from document flow */
+  body.printing-masterlist>*:not(#printable-masterlist),
+  body:has(#printable-masterlist)>*:not(#printable-masterlist),
   body.printing-buying-list>*:not(#printable-buying-list),
   body:has(#printable-buying-list)>*:not(#printable-buying-list),
   body.printing-financial-report>*:not(#printable-financial-report),
@@ -773,6 +777,30 @@
   #printable-financial-report tr {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+  }
+
+
+  #printable-masterlist,
+  #printable-masterlist * {
+    visibility: visible !important;
+  }
+
+  #printable-masterlist {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #111 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
   }
 
   #printable-buying-list,

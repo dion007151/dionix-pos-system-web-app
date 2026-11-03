@@ -308,8 +308,30 @@ export const MasterlistView: React.FC<{ section: MasterlistSection }> = ({ secti
   };
 
   const printMasterlist = () => {
-    if (!filteredRows.length) { addToast('There are no records to print for the selected filters.', 'error'); return; }
+    if (!filteredRows.length) {
+      addToast('There are no records to print for the selected filters.', 'error');
+      return;
+    }
+
+    // Inject dedicated @page rule to eliminate blank page 1 and force landscape
+    const styleId = '__masterlist_print_page_style__';
+    let styleTag = document.getElementById(styleId);
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = styleId;
+      document.head.appendChild(styleTag);
+    }
+    styleTag.innerHTML = '@page { size: A4 landscape; margin: 6mm; }';
+
+    document.body.classList.add('printing-masterlist');
     window.print();
+
+    setTimeout(() => {
+      document.body.classList.remove('printing-masterlist');
+      if (styleTag && styleTag.parentNode) {
+        styleTag.parentNode.removeChild(styleTag);
+      }
+    }, 1500);
   };
 
   const printRecord = (record: MasterlistRecord) => {
@@ -345,7 +367,7 @@ export const MasterlistView: React.FC<{ section: MasterlistSection }> = ({ secti
     return items.map((item, index) => ({ record, item, index, isLast: index === items.length - 1 }));
   });
   const printRecordAmount = (record: MasterlistRecord) => record.amountLabel || (record.amount == null ? '—' : money(record.amount));
-  const renderMasterlistPrint = () => <article id="printable-buying-list" className="buying-print-document buying-print-output detailed medium with-borders alternate-rows" style={{ page: 'buying-list-a4-landscape' } as React.CSSProperties}>
+  const renderMasterlistPrint = () => <article id="printable-masterlist" className="buying-print-document buying-print-output detailed medium with-borders alternate-rows">
     <header className="buying-print-company-header"><img src={SHOPPER_LOGO_DATA_URL} alt="Your Shopper logo" className="buying-print-logo" /><div><h1>{businessInfo.storeName || 'DIONIX POS'}</h1><p>{businessInfo.address || 'San Angel, San Jose de Buenavista, Antique 5700'}</p><p>{businessInfo.tagline || 'Antique Pasabuy'}</p></div></header>
     <div className="buying-print-heading"><div><h2>Masterlist</h2><p>Record format follows the Buying List printout.</p><p>Selected range: {rangeLabel}</p></div><div className="buying-print-meta"><p>Date prepared: {new Date().toLocaleDateString('en-PH')}</p><p>Prepared by: {currentUser?.fullName || currentUser?.username || 'Staff'}</p><p>Record type: {recordType === 'all' ? 'All types' : recordKindLabel(recordType)}</p></div></div>
     <section className="buying-print-summary"><div><span>Total Records</span><strong>{summary.total}</strong></div><div><span>Orders</span><strong>{summary.orders}</strong></div><div><span>Payments Received</span><strong>{money(summary.payments)}</strong></div><div><span>Expenses</span><strong>{money(summary.expenses)}</strong></div></section>
