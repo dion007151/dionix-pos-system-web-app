@@ -73,9 +73,32 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeProfile, setActiveProfileState] = useState<BusinessProfileId>('ANTIQUE_PASABUY');
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [sessionId, setSessionId] = useState<string>('');
+
+  // Persistent User Session
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const stored = localStorage.getItem('antique_pasabuy_session_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [sessionId, setSessionId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('antique_pasabuy_session_id') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    try {
+      return !!localStorage.getItem('antique_pasabuy_session_user');
+    } catch {
+      return false;
+    }
+  });
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -192,6 +215,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSessionId(sid);
     setIsLoggedIn(true);
     setActiveView('dashboard');
+    try {
+      localStorage.setItem('antique_pasabuy_session_user', JSON.stringify(user));
+      localStorage.setItem('antique_pasabuy_session_id', sid);
+    } catch (e) {
+      console.warn('Failed to save session to localStorage', e);
+    }
     if (isSupabaseConfigured() && navigator.onLine) {
       syncAllCloudData().catch(() => { });
     }
@@ -216,6 +245,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsLoggedIn(false);
     setCurrentUser(null);
     setSessionId('');
+    try {
+      localStorage.removeItem('antique_pasabuy_session_user');
+      localStorage.removeItem('antique_pasabuy_session_id');
+    } catch {}
     setActiveView('dashboard');
   };
 
