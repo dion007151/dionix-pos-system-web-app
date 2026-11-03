@@ -231,15 +231,6 @@ export const BuyingListView: React.FC = () => {
     }));
   };
   const handleDownloadPdf = async () => {
-    let target = document.getElementById('printable-buying-list');
-    if (!target) {
-      target = document.querySelector('.buying-print-preview') as HTMLElement;
-    }
-    if (!target) {
-      addToast('Document content not ready for PDF download', 'error');
-      return;
-    }
-
     setIsExportingPdf(true);
     addToast('Generating PDF file, please wait...', 'info');
 
@@ -249,8 +240,8 @@ export const BuyingListView: React.FC = () => {
 
       const format = printSettings.paperSize === 'Legal' ? 'legal'
         : printSettings.paperSize === 'Letter' ? 'letter'
-        : printSettings.paperSize === 'Thermal' ? [80, 297]
-        : 'a4';
+          : printSettings.paperSize === 'Thermal' ? [80, 297]
+            : 'a4';
 
       const opt = {
         margin: [8, 8, 8, 8],
@@ -259,7 +250,8 @@ export const BuyingListView: React.FC = () => {
         html2canvas: {
           scale: 2,
           useCORS: true,
-          logging: false
+          logging: false,
+          allowTaint: true,
         },
         jsPDF: {
           unit: 'mm',
@@ -268,12 +260,40 @@ export const BuyingListView: React.FC = () => {
         }
       };
 
+      // Clone the hidden print element and make it temporarily visible
+      const hidden = document.getElementById('printable-buying-list');
+      if (!hidden) {
+        addToast('Document content not ready. Please try again.', 'error');
+        setIsExportingPdf(false);
+        return;
+      }
+
+      const clone = hidden.cloneNode(true) as HTMLElement;
+      clone.style.position = 'fixed';
+      clone.style.top = '-9999px';
+      clone.style.left = '-9999px';
+      clone.style.display = 'block';
+      clone.style.visibility = 'visible';
+      clone.style.zIndex = '-1';
+      clone.style.width = printSettings.orientation.toLowerCase() === 'landscape' ? '297mm' : '210mm';
+      clone.style.background = '#ffffff';
+      clone.style.color = '#000000';
+      clone.style.padding = '12px';
+      clone.style.fontFamily = 'Arial, sans-serif';
+      clone.style.fontSize = '11px';
+      document.body.appendChild(clone);
+
+      // Small delay so browser renders the clone
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       const html2pdfModule = (await import('html2pdf.js')).default || (await import('html2pdf.js'));
-      await html2pdfModule().set(opt).from(target).save();
+      await html2pdfModule().set(opt).from(clone).save();
+
+      document.body.removeChild(clone);
       addToast('Buying list PDF downloaded successfully!', 'success');
     } catch (err: any) {
       console.error('PDF export error:', err);
-      addToast('Direct PDF export encountered an issue. Opening print dialog to Save as PDF...', 'info');
+      addToast('PDF export failed. Opening print dialog instead...', 'info');
       window.print();
     } finally {
       setIsExportingPdf(false);
