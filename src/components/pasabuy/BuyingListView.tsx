@@ -271,70 +271,70 @@ export const BuyingListView: React.FC = () => {
   };
 
   const handleDownloadPdf = async () => {
-    // Use #printable-buying-list (the hidden print-only clone) rendered offscreen
-    // to avoid html2canvas clipping issues inside overflow-hidden modal portals.
-    const source = document.getElementById('printable-buying-list') as HTMLElement;
-    if (!source) {
-      addToast('Buying list document is not ready for PDF export', 'error');
-      return;
-    }
+      // Use #printable-buying-list (the hidden print-only clone) rendered offscreen
+      // to avoid html2canvas clipping issues inside overflow-hidden modal portals.
+      const source = document.getElementById('printable-buying-list') as HTMLElement;
+      if (!source) {
+        addToast('Buying list document is not ready for PDF export', 'error');
+        return;
+      }
 
-    setIsExportingPdf(true);
-    addToast('Generating PDF, please wait…', 'info');
+      setIsExportingPdf(true);
+      addToast('Generating PDF, please wait…', 'info');
 
-    try {
-      const dateStr = new Date().toISOString().split('T')[0];
-      const filename = `buying-list-${dateStr}.pdf`;
+      try {
+        const dateStr = new Date().toISOString().split('T')[0];
+        const filename = `buying-list-${dateStr}.pdf`;
 
-      const isLandscape = printSettings.orientation === 'Landscape';
-      const format = printSettings.paperSize === 'Legal' ? 'legal'
-        : printSettings.paperSize === 'Letter' ? 'letter'
-          : printSettings.paperSize === 'Thermal' ? [80, 297]
-            : 'a4';
+        const isLandscape = printSettings.orientation === 'Landscape';
+        const format = printSettings.paperSize === 'Legal' ? 'legal'
+          : printSettings.paperSize === 'Letter' ? 'letter'
+            : printSettings.paperSize === 'Thermal' ? [80, 297]
+              : 'a4';
 
-      // Clone into an offscreen container so html2canvas can capture at full size
-      const container = document.createElement('div');
-      container.style.cssText = [
-        'position:fixed',
-        'top:0',
-        'left:0',
-        'width:' + (isLandscape ? '297mm' : '210mm'),
-        'background:#ffffff',
-        'z-index:-9999',
-        'pointer-events:none',
-        'opacity:1',
-        'overflow:visible',
-        'padding:8mm',
-      ].join(';');
+        // Clone into an offscreen container so html2canvas can capture at full size
+        const container = document.createElement('div');
+        container.style.cssText = [
+          'position:fixed',
+          'top:0',
+          'left:0',
+          'width:' + (isLandscape ? '297mm' : '210mm'),
+          'background:#ffffff',
+          'z-index:-9999',
+          'pointer-events:none',
+          'opacity:1',
+          'overflow:visible',
+          'padding:8mm',
+        ].join(';');
 
-      const clone = source.cloneNode(true) as HTMLElement;
-      // Remove the screen-hiding class and force display block so html2canvas captures content
-      clone.classList.remove('buying-print-output');
-      clone.style.display = 'block';
-      clone.style.visibility = 'visible';
-      clone.style.width = isLandscape ? '297mm' : '210mm';
-      clone.style.padding = '8mm';
-      clone.style.background = '#ffffff';
-      clone.style.color = '#111827';
-      container.appendChild(clone);
-      document.body.appendChild(container);
+        const clone = source.cloneNode(true) as HTMLElement;
+        // Remove the screen-hiding class and force display block so html2canvas captures content
+        clone.classList.remove('buying-print-output');
+        clone.style.display = 'block';
+        clone.style.visibility = 'visible';
+        clone.style.width = isLandscape ? '297mm' : '210mm';
+        clone.style.padding = '8mm';
+        clone.style.background = '#ffffff';
+        clone.style.color = '#111827';
+        container.appendChild(clone);
+        document.body.appendChild(container);
 
-      // Allow layout to settle
-      await new Promise(r => setTimeout(r, 300));
+        // Allow layout to settle
+        await new Promise(r => setTimeout(r, 300));
 
-      const opt = {
-        margin: [4, 4, 4, 4],
-        filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          scrollY: 0,
+        const opt = {
+          margin: [4, 4, 4, 4],
+          filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            scrollY: 0,
           scrollX: 0,
-        },
-        jsPDF: {
-          unit: 'mm',
+          },
+          jsPDF: {
+            unit: 'mm',
           format,
           orientation: printSettings.orientation.toLowerCase(),
         },
@@ -826,440 +826,440 @@ export const BuyingListView: React.FC = () => {
       {createPortal(renderPrintDocument(false), document.body)}
 
       {printSettingsOpen && createPortal(
-          <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-3 print:hidden print-modal-backdrop" onClick={() => setPrintSettingsOpen(false)}>
-            <section role="dialog" aria-modal="true" aria-labelledby="buying-print-settings-title" className="flex max-h-[96vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-t-3xl bg-slate-100 shadow-2xl sm:rounded-3xl" onClick={event => event.stopPropagation()}>
-              <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
-                <div><h2 id="buying-print-settings-title" className="flex items-center gap-2 text-base font-black text-slate-900"><Settings2 className="h-4 w-4 text-[#C90052]" />Customize Buying List Printout</h2><p className="mt-0.5 text-[11px] text-slate-500">Changes update the preview immediately. Settings are saved separately for each user.</p></div>
-                <button type="button" onClick={() => setPrintSettingsOpen(false)} aria-label="Close print settings" className="rounded-xl bg-slate-100 p-2 text-slate-600 hover:bg-slate-200"><X className="h-4 w-4" /></button>
-              </header>
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-3 print:hidden print-modal-backdrop" onClick={() => setPrintSettingsOpen(false)}>
+          <section role="dialog" aria-modal="true" aria-labelledby="buying-print-settings-title" className="flex max-h-[96vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-t-3xl bg-slate-100 shadow-2xl sm:rounded-3xl" onClick={event => event.stopPropagation()}>
+            <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
+              <div><h2 id="buying-print-settings-title" className="flex items-center gap-2 text-base font-black text-slate-900"><Settings2 className="h-4 w-4 text-[#C90052]" />Customize Buying List Printout</h2><p className="mt-0.5 text-[11px] text-slate-500">Changes update the preview immediately. Settings are saved separately for each user.</p></div>
+              <button type="button" onClick={() => setPrintSettingsOpen(false)} aria-label="Close print settings" className="rounded-xl bg-slate-100 p-2 text-slate-600 hover:bg-slate-200"><X className="h-4 w-4" /></button>
+            </header>
 
-              <div className={`min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 ${previewOnly ? '' : 'grid gap-4 lg:grid-cols-[minmax(340px,0.9fr)_minmax(0,1.1fr)]'}`}>
-                {!previewOnly && <div className="space-y-3">
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
-                    <legend className="px-1 text-xs font-black text-slate-900">Items to print</legend>
-                    <label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Filter</label>
-                    <select value={printSettings.itemFilter} onChange={event => setPrintSettings(current => ({ ...current, itemFilter: event.target.value as BuyingPrintSettings['itemFilter'] }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
-                      <option value="ALL">All Items</option><option value="ACTIVE">Active / To Buy Items Only</option><option value="REORDER">Re-Ordered Items Only</option><option value="UNAVAILABLE">Unavailable Items Only</option><option value="CANCELLED">Cancelled Items Only</option><option value="SELECTED">Selected Items Only</option>
-                    </select>
-                    {printSettings.itemFilter === 'SELECTED' && <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-xl bg-slate-50 p-2">
-                      {activeItems.length === 0 ? <p className="p-2 text-xs text-slate-500">There are no buying list items to select.</p> : activeItems.map(item => <label key={item.id} className="flex cursor-pointer items-start gap-2 rounded-lg p-1.5 text-[11px] hover:bg-white">
-                        <input type="checkbox" checked={printSettings.selectedItemIds.includes(item.id)} onChange={event => setPrintSettings(current => ({ ...current, selectedItemIds: event.target.checked ? [...new Set([...current.selectedItemIds, item.id])] : current.selectedItemIds.filter(id => id !== item.id) }))} />
-                        <span><strong>{item.productName}</strong> · {item.qty} {item.unit} · {getBuyingStatus(item).replace(/_/g, ' ')}</span>
-                      </label>)}
-                    </div>}
-                  </fieldset>
+            <div className={`min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 ${previewOnly ? '' : 'grid gap-4 lg:grid-cols-[minmax(340px,0.9fr)_minmax(0,1.1fr)]'}`}>
+              {!previewOnly && <div className="space-y-3">
+                <fieldset className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+                  <legend className="px-1 text-xs font-black text-slate-900">Items to print</legend>
+                  <label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Filter</label>
+                  <select value={printSettings.itemFilter} onChange={event => setPrintSettings(current => ({ ...current, itemFilter: event.target.value as BuyingPrintSettings['itemFilter'] }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
+                    <option value="ALL">All Items</option><option value="ACTIVE">Active / To Buy Items Only</option><option value="REORDER">Re-Ordered Items Only</option><option value="UNAVAILABLE">Unavailable Items Only</option><option value="CANCELLED">Cancelled Items Only</option><option value="SELECTED">Selected Items Only</option>
+                  </select>
+                  {printSettings.itemFilter === 'SELECTED' && <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-xl bg-slate-50 p-2">
+                    {activeItems.length === 0 ? <p className="p-2 text-xs text-slate-500">There are no buying list items to select.</p> : activeItems.map(item => <label key={item.id} className="flex cursor-pointer items-start gap-2 rounded-lg p-1.5 text-[11px] hover:bg-white">
+                      <input type="checkbox" checked={printSettings.selectedItemIds.includes(item.id)} onChange={event => setPrintSettings(current => ({ ...current, selectedItemIds: event.target.checked ? [...new Set([...current.selectedItemIds, item.id])] : current.selectedItemIds.filter(id => id !== item.id) }))} />
+                      <span><strong>{item.productName}</strong> · {item.qty} {item.unit} · {getBuyingStatus(item).replace(/_/g, ' ')}</span>
+                    </label>)}
+                  </div>}
+                </fieldset>
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
-                    <legend className="px-1 text-xs font-black text-slate-900">Header information</legend>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-                      {PRINT_HEADER_OPTIONS.map(([key, label]) => <label key={key} className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={printSettings.header[key]} onChange={event => updatePrintOption('header', key, event.target.checked)} />{label}</label>)}
-                    </div>
-                  </fieldset>
+                <fieldset className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+                  <legend className="px-1 text-xs font-black text-slate-900">Header information</legend>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                    {PRINT_HEADER_OPTIONS.map(([key, label]) => <label key={key} className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={printSettings.header[key]} onChange={event => updatePrintOption('header', key, event.target.checked)} />{label}</label>)}
+                  </div>
+                </fieldset>
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
-                    <legend className="px-1 text-xs font-black text-slate-900">Product columns</legend>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3">
-                      {PRINT_COLUMN_OPTIONS.map(([key, label]) => <label key={key} className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={printSettings.columns[key]} onChange={event => updatePrintOption('columns', key, event.target.checked)} />{label}</label>)}
-                    </div>
-                  </fieldset>
+                <fieldset className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+                  <legend className="px-1 text-xs font-black text-slate-900">Product columns</legend>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3">
+                    {PRINT_COLUMN_OPTIONS.map(([key, label]) => <label key={key} className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={printSettings.columns[key]} onChange={event => updatePrintOption('columns', key, event.target.checked)} />{label}</label>)}
+                  </div>
+                </fieldset>
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
-                    <legend className="px-1 text-xs font-black text-slate-900">Summary information</legend>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3">
-                      {PRINT_SUMMARY_OPTIONS.map(([key, label]) => <label key={key} className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={printSettings.summary[key]} onChange={event => updatePrintOption('summary', key, event.target.checked)} />{label}</label>)}
-                    </div>
-                  </fieldset>
+                <fieldset className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+                  <legend className="px-1 text-xs font-black text-slate-900">Summary information</legend>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3">
+                    {PRINT_SUMMARY_OPTIONS.map(([key, label]) => <label key={key} className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={printSettings.summary[key]} onChange={event => updatePrintOption('summary', key, event.target.checked)} />{label}</label>)}
+                  </div>
+                </fieldset>
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
-                    <legend className="px-1 text-xs font-black text-slate-900">Page and style</legend>
-                    <div className="grid grid-cols-2 gap-2">
-                      <label className="text-[10px] font-bold text-slate-600">Paper size<select value={printSettings.paperSize} onChange={event => setPrintSettings(current => ({ ...current, paperSize: event.target.value as BuyingPrintSettings['paperSize'] }))} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs"><option>A4</option><option>Letter</option><option>Legal</option><option>Thermal</option></select></label>
-                      <label className="text-[10px] font-bold text-slate-600">Orientation<select value={printSettings.orientation} onChange={event => setPrintSettings(current => ({ ...current, orientation: event.target.value as BuyingPrintSettings['orientation'] }))} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs"><option>Portrait</option><option>Landscape</option></select></label>
-                      <label className="text-[10px] font-bold text-slate-600">Font size<select value={printSettings.fontSize} onChange={event => setPrintSettings(current => ({ ...current, fontSize: event.target.value as BuyingPrintSettings['fontSize'] }))} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs"><option>Small</option><option>Medium</option><option>Large</option></select></label>
-                      <label className="text-[10px] font-bold text-slate-600">Print layout<select value={printSettings.layout} onChange={event => setPrintSettings(current => ({ ...current, layout: event.target.value as BuyingPrintSettings['layout'] }))} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs"><option>Compact</option><option>Detailed</option></select></label>
-                    </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      {([['showBorders', 'Show table borders'], ['alternateRows', 'Alternate row colors'], ['showCompanyHeader', 'Show company header'], ['includeSignatures', 'Include signature section']] as const).map(([key, label]) => <label key={key} className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={printSettings[key]} onChange={event => setPrintSettings(current => ({ ...current, [key]: event.target.checked }))} />{label}</label>)}
-                    </div>
-                    {printSettings.includeSignatures && <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3">
-                      {([['preparedBy', 'Prepared by'], ['checkedBy', 'Checked by'], ['approvedBy', 'Approved by']] as const).map(([key, label]) => <label key={key} className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={printSettings.signatureLines[key]} onChange={event => setPrintSettings(current => ({ ...current, signatureLines: { ...current.signatureLines, [key]: event.target.checked } }))} />{label} signature</label>)}
-                    </div>}
-                    <label className="mt-3 block text-[10px] font-bold text-slate-600">Custom notes or instructions<textarea value={printSettings.customNotes} onChange={event => setPrintSettings(current => ({ ...current, customNotes: event.target.value }))} rows={2} placeholder="Optional note to print at the bottom" className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-normal" /></label>
-                  </fieldset>
-                </div>}
+                <fieldset className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+                  <legend className="px-1 text-xs font-black text-slate-900">Page and style</legend>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="text-[10px] font-bold text-slate-600">Paper size<select value={printSettings.paperSize} onChange={event => setPrintSettings(current => ({ ...current, paperSize: event.target.value as BuyingPrintSettings['paperSize'] }))} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs"><option>A4</option><option>Letter</option><option>Legal</option><option>Thermal</option></select></label>
+                    <label className="text-[10px] font-bold text-slate-600">Orientation<select value={printSettings.orientation} onChange={event => setPrintSettings(current => ({ ...current, orientation: event.target.value as BuyingPrintSettings['orientation'] }))} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs"><option>Portrait</option><option>Landscape</option></select></label>
+                    <label className="text-[10px] font-bold text-slate-600">Font size<select value={printSettings.fontSize} onChange={event => setPrintSettings(current => ({ ...current, fontSize: event.target.value as BuyingPrintSettings['fontSize'] }))} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs"><option>Small</option><option>Medium</option><option>Large</option></select></label>
+                    <label className="text-[10px] font-bold text-slate-600">Print layout<select value={printSettings.layout} onChange={event => setPrintSettings(current => ({ ...current, layout: event.target.value as BuyingPrintSettings['layout'] }))} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs"><option>Compact</option><option>Detailed</option></select></label>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {([['showBorders', 'Show table borders'], ['alternateRows', 'Alternate row colors'], ['showCompanyHeader', 'Show company header'], ['includeSignatures', 'Include signature section']] as const).map(([key, label]) => <label key={key} className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={printSettings[key]} onChange={event => setPrintSettings(current => ({ ...current, [key]: event.target.checked }))} />{label}</label>)}
+                  </div>
+                  {printSettings.includeSignatures && <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3">
+                    {([['preparedBy', 'Prepared by'], ['checkedBy', 'Checked by'], ['approvedBy', 'Approved by']] as const).map(([key, label]) => <label key={key} className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={printSettings.signatureLines[key]} onChange={event => setPrintSettings(current => ({ ...current, signatureLines: { ...current.signatureLines, [key]: event.target.checked } }))} />{label} signature</label>)}
+                  </div>}
+                  <label className="mt-3 block text-[10px] font-bold text-slate-600">Custom notes or instructions<textarea value={printSettings.customNotes} onChange={event => setPrintSettings(current => ({ ...current, customNotes: event.target.value }))} rows={2} placeholder="Optional note to print at the bottom" className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-normal" /></label>
+                </fieldset>
+              </div>}
 
-                <div className={`min-w-0 overflow-auto rounded-2xl bg-slate-300 p-3 sm:p-5 ${previewOnly ? 'flex justify-center' : ''}`}>
-                  <div className="buying-preview-scale">{renderPrintDocument(true)}</div>
-                </div>
-              </div>
-
-              <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white px-3 py-3 sm:px-5">
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={() => { setPreviewOnly(value => !value); }} className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50"><Printer className="h-3.5 w-3.5" />{previewOnly ? 'Edit Settings' : 'Preview'}</button>
-                  <button type="button" onClick={() => void savePrintSettings()} className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100"><Save className="h-3.5 w-3.5" />Save Print Settings</button>
-                  <button type="button" onClick={() => void resetPrintSettings()} className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50"><ResetIcon className="h-3.5 w-3.5" />Reset to Default</button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={() => setPrintSettingsOpen(false)} className="rounded-lg bg-slate-100 px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-200">Cancel</button>
-                  <button
-                    type="button"
-                    onClick={handleDownloadPdf}
-                    disabled={isExportingPdf}
-                    className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-60 transition-all"
-                  >
-                    <Download className={`h-3.5 w-3.5 ${isExportingPdf ? 'animate-bounce' : ''}`} />
-                    <span>{isExportingPdf ? 'Generating PDF...' : 'Download PDF'}</span>
-                  </button>
-                  <button type="button" onClick={handlePrint} className="flex items-center gap-1.5 rounded-lg bg-[#C90052] px-4 py-2 text-[11px] font-bold text-white hover:bg-[#E60063]"><Printer className="h-3.5 w-3.5" />Print</button>
-                </div>
-              </footer>
-            </section>
-          </div>, document.body
-      )}
-
-          {/* Filter Bar (Horizontal Store Badges + Search) */}
-          <div className="bg-white p-3.5 border border-slate-200/80 rounded-2xl shadow-xs space-y-3">
-            {/* Search & Status Filters */}
-            <div className="flex flex-col sm:flex-row gap-2.5">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Search product name or store..."
-                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
-                />
-              </div>
-
-              <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-slate-100 p-0.5 text-xs font-semibold no-scrollbar">
-                {([
-                  { id: 'PENDING', label: 'To Buy', count: pendingItems.length },
-                  { id: 'BOUGHT', label: 'Bought', count: purchasedItems.length },
-                  { id: 'REORDER', label: 'Re-order', count: activeItems.filter(i => getBuyingStatus(i) === 'REORDER').length },
-                  { id: 'UNAVAILABLE', label: 'Not Available', count: activeItems.filter(i => getBuyingStatus(i) === 'UNAVAILABLE').length },
-                  { id: 'BACKORDER', label: 'Backorder', count: activeItems.filter(i => getBuyingStatus(i) === 'BACKORDER').length },
-                  { id: 'ALTERNATIVE_SELECTED', label: 'Alternative', count: activeItems.filter(i => getBuyingStatus(i) === 'ALTERNATIVE_SELECTED').length },
-                  { id: 'CANCELLED', label: 'Cancelled', count: activeItems.filter(i => getBuyingStatus(i) === 'CANCELLED').length },
-                  { id: 'COMPLETED', label: 'Completed', count: activeItems.filter(i => ordersById.get(i.orderId)?.status === 'COMPLETED').length },
-                  { id: 'ALL', label: 'All', count: activeItems.length },
-                ] as const).map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setFilterStatus(tab.id)}
-                    className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-1 transition-all ${filterStatus === tab.id ? 'bg-[#C90052] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
-                  >
-                    {tab.label} ({tab.count})
-                  </button>
-                ))}
+              <div className={`min-w-0 overflow-auto rounded-2xl bg-slate-300 p-3 sm:p-5 ${previewOnly ? 'flex justify-center' : ''}`}>
+                <div className="buying-preview-scale">{renderPrintDocument(true)}</div>
               </div>
             </div>
 
-            {/* Store Quick Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 no-scrollbar text-xs">
+            <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white px-3 py-3 sm:px-5">
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => { setPreviewOnly(value => !value); }} className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50"><Printer className="h-3.5 w-3.5" />{previewOnly ? 'Edit Settings' : 'Preview'}</button>
+                <button type="button" onClick={() => void savePrintSettings()} className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100"><Save className="h-3.5 w-3.5" />Save Print Settings</button>
+                <button type="button" onClick={() => void resetPrintSettings()} className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50"><ResetIcon className="h-3.5 w-3.5" />Reset to Default</button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => setPrintSettingsOpen(false)} className="rounded-lg bg-slate-100 px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-200">Cancel</button>
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  disabled={isExportingPdf}
+                  className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-60 transition-all"
+                >
+                  <Download className={`h-3.5 w-3.5 ${isExportingPdf ? 'animate-bounce' : ''}`} />
+                  <span>{isExportingPdf ? 'Generating PDF...' : 'Download PDF'}</span>
+                </button>
+                <button type="button" onClick={handlePrint} className="flex items-center gap-1.5 rounded-lg bg-[#C90052] px-4 py-2 text-[11px] font-bold text-white hover:bg-[#E60063]"><Printer className="h-3.5 w-3.5" />Print</button>
+              </div>
+            </footer>
+          </section>
+        </div>, document.body
+      )}
+
+      {/* Filter Bar (Horizontal Store Badges + Search) */}
+      <div className="bg-white p-3.5 border border-slate-200/80 rounded-2xl shadow-xs space-y-3">
+        {/* Search & Status Filters */}
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search product name or store..."
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-slate-100 p-0.5 text-xs font-semibold no-scrollbar">
+            {([
+              { id: 'PENDING', label: 'To Buy', count: pendingItems.length },
+              { id: 'BOUGHT', label: 'Bought', count: purchasedItems.length },
+              { id: 'REORDER', label: 'Re-order', count: activeItems.filter(i => getBuyingStatus(i) === 'REORDER').length },
+              { id: 'UNAVAILABLE', label: 'Not Available', count: activeItems.filter(i => getBuyingStatus(i) === 'UNAVAILABLE').length },
+              { id: 'BACKORDER', label: 'Backorder', count: activeItems.filter(i => getBuyingStatus(i) === 'BACKORDER').length },
+              { id: 'ALTERNATIVE_SELECTED', label: 'Alternative', count: activeItems.filter(i => getBuyingStatus(i) === 'ALTERNATIVE_SELECTED').length },
+              { id: 'CANCELLED', label: 'Cancelled', count: activeItems.filter(i => getBuyingStatus(i) === 'CANCELLED').length },
+              { id: 'COMPLETED', label: 'Completed', count: activeItems.filter(i => ordersById.get(i.orderId)?.status === 'COMPLETED').length },
+              { id: 'ALL', label: 'All', count: activeItems.length },
+            ] as const).map(tab => (
               <button
-                onClick={() => setSelectedStore('ALL')}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all ${selectedStore === 'ALL'
+                key={tab.id}
+                onClick={() => setFilterStatus(tab.id)}
+                className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-1 transition-all ${filterStatus === tab.id ? 'bg-[#C90052] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+              >
+                {tab.label} ({tab.count})
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Store Quick Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 no-scrollbar text-xs">
+          <button
+            onClick={() => setSelectedStore('ALL')}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all ${selectedStore === 'ALL'
+              ? 'bg-[#C90052] text-white shadow-xs'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+          >
+            <span>All Stores</span>
+          </button>
+          {(stores || []).map(s => {
+            const count = activeItems.filter(i => i.storeName === s.name && getBuyingStatus(i) === 'PENDING').length;
+            const isSelected = selectedStore === s.name;
+            return (
+              <button
+                key={s.id}
+                onClick={() => setSelectedStore(s.name)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all ${isSelected
                   ? 'bg-[#C90052] text-white shadow-xs'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
               >
-                <span>All Stores</span>
-              </button>
-              {(stores || []).map(s => {
-                const count = activeItems.filter(i => i.storeName === s.name && getBuyingStatus(i) === 'PENDING').length;
-                const isSelected = selectedStore === s.name;
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => setSelectedStore(s.name)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all ${isSelected
-                      ? 'bg-[#C90052] text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                <StoreIcon className="w-3.5 h-3.5" />
+                <span>{s.name}</span>
+                {count > 0 && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${isSelected ? 'bg-white text-pink-900' : 'bg-amber-200 text-amber-900'
                       }`}
                   >
-                    <StoreIcon className="w-3.5 h-3.5" />
-                    <span>{s.name}</span>
-                    {count > 0 && (
-                      <span
-                        className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${isSelected ? 'bg-white text-pink-900' : 'bg-amber-200 text-amber-900'
-                          }`}
-                      >
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Spreadsheet-style Buying List */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
-            {filteredItems.length === 0 ? (
-              <div className="p-8 text-center">
-                <CheckCircle className="mx-auto mb-2 h-10 w-10 text-emerald-500 opacity-80" />
-                <h3 className="text-sm font-bold text-slate-800">No items found</h3>
-                <p className="mt-1 text-xs text-slate-600">There are no items for this store, status, or search.</p>
-              </div>
-            ) : (
-              <div className="max-w-full overflow-x-auto">
-                <table className="w-full min-w-[1120px] border-collapse text-left text-xs">
-                  <thead><tr className="bg-[#ff0066] text-center text-[10px] font-black uppercase text-black">
-                    {['Bought / Status', 'Store', 'Customer', 'Items', 'Price', 'Qty', 'Line Amount', 'Total Groceries', 'Pasabuy Fee', 'Total', 'Actions'].map(label => <th key={label} className="border border-black px-2 py-2">{label}</th>)}
-                  </tr></thead>
-                  <tbody>
-                    {filteredItems.map(item => {
-                      const parentOrder = ordersById.get(item.orderId);
-                      const displayStatus = getBuyingStatus(item);
-                      const isPurchased = displayStatus === 'PURCHASED' || displayStatus === 'BOUGHT_FROM_STOCK';
-                      const isPending = displayStatus === 'PENDING';
-                      const orderIsCancelled = parentOrder?.status === 'CANCELLED';
-                      const orderIsCompleted = parentOrder?.status === 'COMPLETED';
-                      const price = item.actualPrice ?? item.estimatedPrice;
-                      const lineAmount = roundMoney(item.qty * price);
-                      const isBoughtFromStock = displayStatus === 'BOUGHT_FROM_STOCK';
-                      const matchingStockProduct = (products || []).find(p => p.name.trim().toLowerCase() === item.productName.trim().toLowerCase() && p.isStockItem);
-                      const availableStock = matchingStockProduct?.stockQuantity || 0;
-                      const hasStockAvailable = !!matchingStockProduct && availableStock >= item.qty;
-                      const isRestocked = (displayStatus === 'BACKORDER' || !!item.expectedRestockDate) && !!matchingStockProduct && availableStock >= item.qty;
-                      const needsPurchaseFollowup = isPending || displayStatus === 'BACKORDER' || displayStatus === 'ALTERNATIVE_SELECTED';
-                      const orderItemsForView = visibleItemsByOrder.get(item.orderId) || [];
-                      const isLastVisibleOrderItem = orderItemsForView[orderItemsForView.length - 1]?.id === item.id;
-                      const orderSummary = printableOrderSummaries.get(item.orderId);
-                      const rowClass = isRestocked
-                        ? 'bg-emerald-100 hover:bg-emerald-200'
-                        : orderIsCompleted
-                          ? 'bg-emerald-100 hover:bg-emerald-200'
-                          : displayStatus === 'REORDER'
-                            ? 'bg-yellow-100 hover:bg-yellow-200/80'
-                            : displayStatus === 'BACKORDER'
-                              ? 'bg-orange-100 hover:bg-orange-200'
-                              : displayStatus === 'ALTERNATIVE_SELECTED'
-                                ? 'bg-blue-100 hover:bg-blue-200'
-                                : displayStatus === 'UNAVAILABLE'
-                                  ? 'bg-red-200 hover:bg-red-300/80'
-                                  : displayStatus === 'CANCELLED'
-                                    ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                                    : 'bg-white hover:bg-pink-50/50';
-                      const badgeClass = isRestocked
-                        ? 'bg-emerald-600 text-white'
-                        : orderIsCompleted
-                          ? 'bg-emerald-600 text-white'
-                          : displayStatus === 'BACKORDER'
-                            ? 'bg-orange-200 text-orange-950'
-                            : displayStatus === 'ALTERNATIVE_SELECTED'
-                              ? 'bg-blue-200 text-blue-950'
-                              : displayStatus === 'REORDER'
-                                ? 'bg-yellow-300 text-yellow-950'
-                                : displayStatus === 'UNAVAILABLE'
-                                  ? 'bg-red-600 text-white'
-                                  : displayStatus === 'CANCELLED'
-                                    ? 'bg-slate-300 text-slate-800'
-                                    : isPurchased
-                                      ? 'bg-emerald-100 text-emerald-800'
-                                      : 'bg-emerald-100 text-emerald-800';
-                      const badgeLabel = isRestocked
-                        ? 'RESTOCKED / AVAILABLE'
-                        : orderIsCompleted
-                          ? 'COMPLETED'
-                          : displayStatus === 'REORDER'
-                            ? 'RE-ORDERED'
-                            : displayStatus === 'BACKORDER'
-                              ? 'BACKORDER'
-                              : displayStatus === 'ALTERNATIVE_SELECTED'
-                                ? 'ALTERNATIVE SELECTED'
-                                : displayStatus === 'UNAVAILABLE'
-                                  ? 'NOT AVAILABLE'
-                                  : displayStatus === 'CANCELLED'
-                                    ? 'CANCELLED'
-                                    : isPurchased
-                                      ? (isBoughtFromStock ? 'BOUGHT / ON HAND' : 'BOUGHT')
-                                      : 'ACTIVE';
-
-                      return <tr key={item.id} className={`border-b border-slate-200 transition-colors ${rowClass}`}>
-                        <td className="whitespace-nowrap px-2 py-2 font-bold"><span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-black tracking-wide ${badgeClass}`}>{badgeLabel}</span></td>
-                        <td className="px-2 py-2 font-semibold">{item.storeName || 'Store'}</td>
-                        <td className="max-w-40 px-2 py-2"><span className="font-semibold text-slate-800">{parentOrder?.customerName || 'Walk-in Customer'}</span>{parentOrder && <small className="mt-0.5 block text-slate-500">{parentOrder.orderNo}</small>}</td>
-                        <td className="px-2 py-2"><span className="font-semibold text-slate-900">{item.productName}</span>{item.notes && <small className="mt-0.5 block text-slate-600">Note: {item.notes}</small>}{isPending && matchingStockProduct && availableStock > 0 && <small className={`mt-1 inline-flex rounded-md px-1.5 py-0.5 font-semibold ${hasStockAvailable ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{hasStockAvailable ? `In stock: ${availableStock} ${item.unit}` : `Stock alert: ${availableStock} ${item.unit} available · ${item.qty - availableStock} short`}</small>}{isPending && matchingStockProduct && availableStock <= 0 && <small className="mt-1 inline-flex rounded-md bg-red-100 px-1.5 py-0.5 font-semibold text-red-800">Out of stock</small>}{isRestocked && <small className="mt-1 inline-flex rounded-md bg-emerald-200 px-1.5 py-0.5 font-semibold text-emerald-900">Restocked: {availableStock} {item.unit} · follow up to buy</small>}{item.selectedAlternativeProductName && <small className="mt-1 block text-blue-900">Option: {item.selectedAlternativeProductName} · {item.selectedAlternativeSupplier} · ₱{item.selectedAlternativePrice?.toFixed(2)} ({(item.selectedAlternativePrice || 0) - item.estimatedPrice >= 0 ? '+' : '−'}₱{Math.abs((item.selectedAlternativePrice || 0) - item.estimatedPrice).toFixed(2)})</small>}{item.expectedRestockDate && <small className="mt-0.5 block text-slate-600">Expected restock: {item.expectedRestockDate}</small>}</td>
-                        <td className="whitespace-nowrap px-2 py-2 text-right">₱{price.toFixed(2)}<small className="block text-slate-500">/{item.unit}</small></td>
-                        <td className="px-2 py-2 text-center">{item.qty}</td>
-                        <td className="whitespace-nowrap px-2 py-2 text-right font-semibold">₱{lineAmount.toFixed(2)}</td>
-                        <td className="whitespace-nowrap px-2 py-2 text-right font-semibold">{isLastVisibleOrderItem && orderSummary ? `₱${orderSummary.subtotal.toFixed(2)}` : ''}</td>
-                        <td className="whitespace-nowrap px-2 py-2 text-right">{isLastVisibleOrderItem && orderSummary ? `₱${orderSummary.fee.toFixed(2)}` : ''}</td>
-                        <td className="whitespace-nowrap px-2 py-2 text-right font-black">{isLastVisibleOrderItem && orderSummary ? <><span>₱{orderSummary.grandTotal.toFixed(2)}</span>{(orderSummary.delivery > 0 || orderSummary.discount > 0) && <small className="block font-normal text-slate-600">{orderSummary.delivery > 0 ? `Rider +₱${orderSummary.delivery.toFixed(2)}` : ''}{orderSummary.delivery > 0 && orderSummary.discount > 0 ? ' · ' : ''}{orderSummary.discount > 0 ? `Disc. −₱${orderSummary.discount.toFixed(2)}` : ''}</small>}</> : ''}</td>
-                        <td className="min-w-[19rem] px-3 py-2.5">
-                          <div className="flex flex-wrap items-center gap-2">
-                            {needsPurchaseFollowup && !orderIsCancelled && !orderIsCompleted && <>
-                              <div className="flex w-full flex-wrap items-center gap-1.5">
-                                {hasStockAvailable && <button onClick={() => handleFulfillFromStock(item)} className="flex items-center gap-1 rounded-lg bg-pink-100 px-2.5 py-2 text-[10px] font-bold text-pink-800 hover:bg-pink-200" title={`Fulfill from ${availableStock} units of on-hand stock`}><Boxes className="h-3 w-3" />Use stock ({availableStock})</button>}
-                                <button onClick={() => handleOpenPurchase(item)} className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-2 text-[10px] font-bold text-white hover:bg-emerald-700"><Check className="h-3 w-3" />Bought</button>
-                              </div>
-                              <div className="flex w-full flex-wrap items-center gap-1.5 border-t border-slate-300/70 pt-2">
-                                <button onClick={() => handleSetStatus(item, 'REORDER')} className="flex items-center gap-1 rounded-lg bg-yellow-200 px-2.5 py-2 text-[10px] font-bold text-yellow-950 hover:bg-yellow-300"><RotateCcw className="h-3 w-3" />Re-order</button>
-                                <button aria-label={`Mark ${item.productName} unavailable`} title="Mark unavailable" onClick={() => void handleMarkUnavailableAndOpen(item)} className="flex items-center gap-1 rounded-lg bg-red-100 px-2.5 py-2 text-[10px] font-bold text-red-800 hover:bg-red-200"><XCircle className="h-3.5 w-3.5" />Not available</button>
-                                <button aria-label={`Cancel ${item.productName}`} title="Cancel item" onClick={() => setCancelItemTarget(item)} className="flex items-center gap-1 rounded-lg bg-slate-200 px-2.5 py-2 text-[10px] font-bold text-slate-700 hover:bg-red-100 hover:text-red-800"><Ban className="h-3 w-3" />Cancel</button>
-                              </div>
-                            </>}
-                            {isPurchased && !orderIsCancelled && !orderIsCompleted && <>
-                              <span className="text-[10px] font-semibold text-emerald-700">{isBoughtFromStock ? 'From Stock' : 'Purchased'}</span>
-                              <button onClick={() => handleSetStatus(item, 'PENDING')} className="flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-200" title="Reset to pending"><RotateCcw className="h-3 w-3" />Undo</button>
-                            </>}
-                            {displayStatus === 'REORDER' && !orderIsCancelled && !orderIsCompleted && <div className="flex w-full flex-wrap items-center gap-1.5 border-t border-slate-300/70 pt-2">
-                              <button onClick={() => handleOpenPurchase(item)} className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-2 text-[10px] font-bold text-white hover:bg-emerald-700"><Check className="h-3 w-3" />Bought</button>
-                            </div>}
-                            {(displayStatus === 'UNAVAILABLE' || displayStatus === 'BACKORDER' || displayStatus === 'ALTERNATIVE_SELECTED') && !orderIsCancelled && !orderIsCompleted && <button onClick={() => openUnavailablePanel(item)} className="rounded-lg bg-white px-2 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm hover:bg-slate-100">Review options</button>}
-                            {displayStatus === 'CANCELLED' && !orderIsCancelled && !orderIsCompleted && <button onClick={() => handleSetStatus(item, 'PENDING')} className="rounded-lg bg-white px-2 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm hover:bg-slate-100">Restore</button>}
-                            {orderIsCancelled && <span className="text-[10px] font-semibold text-slate-500">Order cancelled</span>}
-                            {orderIsCompleted && <span className="text-[10px] font-semibold text-emerald-700">Order complete</span>}
-                            {isLastVisibleOrderItem && parentOrder && (currentUser?.role === 'Admin' || currentUser?.role === 'Staff') && <button type="button" onClick={() => setDeleteOrderTarget(parentOrder)} title={`Move ${parentOrder.orderNo} to Archive`} className="flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-[10px] font-bold text-slate-700 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800"><Trash2 className="h-3.5 w-3.5" />Archive order</button>}
-                          </div>
-                        </td>
-                      </tr>;
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {unavailableItem && createPortal(
-            <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={() => setUnavailableItem(null)}>
-              <section role="dialog" aria-modal="true" aria-labelledby="unavailable-panel-title" className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl" onClick={event => event.stopPropagation()}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-red-700">Recommendation panel</p>
-                    <h3 id="unavailable-panel-title" className="mt-1 text-lg font-black text-slate-900">{unavailableItem.productName}</h3>
-                    <p className="mt-0.5 text-xs text-slate-500">Original quantity: {unavailableItem.qty} {unavailableItem.unit} · Original estimate: ₱{unavailableItem.estimatedPrice.toFixed(2)} / {unavailableItem.unit}</p>
-                    <span className="mt-2 inline-flex rounded-full bg-red-100 px-2.5 py-1 text-[10px] font-black tracking-wide text-red-800">NOT AVAILABLE</span>
-                  </div>
-                  <button type="button" onClick={() => setUnavailableItem(null)} aria-label="Close recommendations" className="rounded-xl bg-slate-100 p-2 text-slate-600 hover:bg-slate-200"><X className="h-4 w-4" /></button>
-                </div>
-
-                <div className="mt-4 rounded-2xl border border-red-100 bg-red-50/70 p-3">
-                  <label className="block text-xs font-bold text-slate-800">Reason supplier could not provide this item</label>
-                  <textarea value={unavailableReason} onChange={event => setUnavailableReason(event.target.value)} rows={2} placeholder="For example: temporarily out of stock" className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-300" />
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500">
-                    <span>Marked by {unavailableItem.unavailableBy || staffName}{unavailableItem.unavailableAt ? ` · ${new Date(unavailableItem.unavailableAt).toLocaleString()}` : ''}</span>
-                    <button type="button" onClick={handleRecordUnavailable} className="rounded-lg bg-red-700 px-3 py-2 font-bold text-white hover:bg-red-800">{unavailableItem.status === 'UNAVAILABLE' ? 'Save reason' : 'Record unavailable'}</button>
-                  </div>
-                </div>
-
-                <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50 p-3 text-xs">
-                  <p className="font-black text-blue-950">Recommended action</p>
-                  <p className="mt-1 text-blue-900">{recommendedAlternative
-                    ? `Review ${recommendedAlternative.name} from ${recommendedAlternative.store} at ₱${recommendedAlternative.price.toFixed(2)} per ${recommendedAlternative.unit} (lowest recorded catalog price among matches).`
-                    : expectedRestockDate
-                      ? `Wait for the expected restock on ${expectedRestockDate}, then verify availability before buying.`
-                      : 'No matching alternative supplier is recorded. Backorder the item or wait for restocking.'}</p>
-                </div>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 p-3 sm:col-span-2">
-                    <div className="flex items-center gap-2">
-                      <PackageSearch className="h-4 w-4 text-blue-700" />
-                      <h4 className="text-sm font-black text-slate-900">Find another supplier</h4>
-                    </div>
-                    <p className="mt-1 text-[11px] text-slate-500">Search recorded POS products. Choosing one records it for review; the original order item and price stay unchanged.</p>
-                    <input value={supplierSearch} onChange={event => setSupplierSearch(event.target.value)} placeholder="Search product or category in catalog..." className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none focus:border-blue-300" />
-                    <div className="mt-2 max-h-48 space-y-2 overflow-y-auto">
-                      {alternativeProducts.map(product => {
-                        const difference = product.price - unavailableItem.estimatedPrice;
-                        return <div key={product.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-2.5">
-                          <div className="min-w-0"><p className="truncate text-xs font-bold text-slate-900">{product.name}</p><p className="text-[10px] text-slate-600">Supplier: {product.store} · ₱{product.price.toFixed(2)} / {product.unit}</p><p className={`text-[10px] font-semibold ${difference <= 0 ? 'text-emerald-700' : 'text-amber-700'}`}>Difference: {difference < 0 ? '−' : '+'}₱{Math.abs(difference).toFixed(2)} per unit</p></div>
-                          <button type="button" onClick={() => handleSelectAlternative(product)} className="shrink-0 rounded-lg bg-blue-700 px-3 py-2 text-[10px] font-bold text-white hover:bg-blue-800">Select for review</button>
-                        </div>;
-                      })}
-                      {!!supplierSearch.trim() && alternativeProducts.length === 0 && <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">No matching products from another recorded supplier are in the POS catalog.</p>}
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-orange-200 bg-orange-50/60 p-3">
-                    <div className="flex items-center gap-2"><RotateCcw className="h-4 w-4 text-orange-700" /><h4 className="text-sm font-black text-slate-900">Backorder</h4></div>
-                    <p className="mt-1 text-[11px] text-slate-600">Keep this item in the list and flag it for supplier follow-up.</p>
-                    <button type="button" onClick={handleBackorder} className="mt-3 w-full rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white hover:bg-orange-700">Add to backorder</button>
-                  </div>
-
-                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3">
-                    <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-emerald-700" /><h4 className="text-sm font-black text-slate-900">Wait for restocking</h4></div>
-                    <p className="mt-1 text-[11px] text-slate-600">Keep it pending; available catalog stock will show a live restock notice.</p>
-                    <input type="date" value={expectedRestockDate} onChange={event => setExpectedRestockDate(event.target.value)} aria-label="Expected restock date" className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs" />
-                    <button type="button" onClick={handleWaitForRestock} className="mt-2 w-full rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800">Keep pending</button>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div><h4 className="text-sm font-black text-slate-900">Remove item</h4><p className="mt-1 text-[11px] text-slate-600">Soft-removes it from the buying list after confirmation and keeps its order history.</p></div>
-                      <button type="button" onClick={handleRemoveUnavailableItem} className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50">Remove item…</button>
-                    </div>
-                  </div>
-                </div>
-
-                {!!unavailableItem.availabilityHistory?.length && <div className="mt-4 rounded-2xl border border-slate-200 p-3">
-                  <div className="flex items-center gap-2"><ClipboardList className="h-4 w-4 text-slate-600" /><h4 className="text-xs font-black text-slate-800">Availability history</h4></div>
-                  <ul className="mt-2 max-h-32 space-y-1.5 overflow-y-auto text-[10px] text-slate-600">
-                    {[...unavailableItem.availabilityHistory].reverse().map((entry, index) => <li key={`${entry.at}-${index}`} className="border-l-2 border-slate-200 pl-2"><strong className="text-slate-800">{entry.action}</strong> · {entry.by} · {new Date(entry.at).toLocaleString()}{entry.reason && <> · {entry.reason}</>}{entry.expectedRestockDate && <> · Expected {entry.expectedRestockDate}</>}{entry.alternativeProductName && <> · {entry.alternativeProductName} ({entry.alternativeSupplier}) · Δ ₱{entry.priceDifference?.toFixed(2)}</>}</li>)}
-                  </ul>
-                </div>}
-              </section>
-            </div>, document.body
-          )}
-
-          {/* Actual Price Prompt Modal */}
-          {itemToPurchase && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-              <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-5 border border-slate-200 space-y-4">
-                <div>
-                  <span className="text-[10px] font-bold text-pink-700 uppercase tracking-wider">
-                    Confirm Purchase
+                    {count}
                   </span>
-                  <h3 className="text-base font-bold text-slate-900 mt-0.5">
-                    {itemToPurchase.qty}x {itemToPurchase.selectedAlternativeProductName || itemToPurchase.productName}
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    {itemToPurchase.selectedAlternativeProductName
-                      ? `Alternative for ${itemToPurchase.productName} · Supplier: ${itemToPurchase.selectedAlternativeSupplier} · Est: ₱${(itemToPurchase.selectedAlternativePrice || 0).toFixed(2)}`
-                      : `Store: ${itemToPurchase.storeName} · Est: ₱${itemToPurchase.estimatedPrice.toFixed(2)}`}
-                  </p>
-                </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Actual Purchase Unit Price (₱) *
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    autoFocus
-                    value={actualPriceInput}
-                    onChange={e => setActualPriceInput(e.target.value)}
-                    className="w-full px-3 py-2 text-lg font-black text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-600"
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Total will be: ₱{roundMoney(itemToPurchase.qty * (parseFloat(actualPriceInput) || 0)).toFixed(2)}
-                  </p>
-                </div>
+      {/* Spreadsheet-style Buying List */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+        {filteredItems.length === 0 ? (
+          <div className="p-8 text-center">
+            <CheckCircle className="mx-auto mb-2 h-10 w-10 text-emerald-500 opacity-80" />
+            <h3 className="text-sm font-bold text-slate-800">No items found</h3>
+            <p className="mt-1 text-xs text-slate-600">There are no items for this store, status, or search.</p>
+          </div>
+        ) : (
+          <div className="max-w-full overflow-x-auto">
+            <table className="w-full min-w-[1120px] border-collapse text-left text-xs">
+              <thead><tr className="bg-[#ff0066] text-center text-[10px] font-black uppercase text-black">
+                {['Bought / Status', 'Store', 'Customer', 'Items', 'Price', 'Qty', 'Line Amount', 'Total Groceries', 'Pasabuy Fee', 'Total', 'Actions'].map(label => <th key={label} className="border border-black px-2 py-2">{label}</th>)}
+              </tr></thead>
+              <tbody>
+                {filteredItems.map(item => {
+                  const parentOrder = ordersById.get(item.orderId);
+                  const displayStatus = getBuyingStatus(item);
+                  const isPurchased = displayStatus === 'PURCHASED' || displayStatus === 'BOUGHT_FROM_STOCK';
+                  const isPending = displayStatus === 'PENDING';
+                  const orderIsCancelled = parentOrder?.status === 'CANCELLED';
+                  const orderIsCompleted = parentOrder?.status === 'COMPLETED';
+                  const price = item.actualPrice ?? item.estimatedPrice;
+                  const lineAmount = roundMoney(item.qty * price);
+                  const isBoughtFromStock = displayStatus === 'BOUGHT_FROM_STOCK';
+                  const matchingStockProduct = (products || []).find(p => p.name.trim().toLowerCase() === item.productName.trim().toLowerCase() && p.isStockItem);
+                  const availableStock = matchingStockProduct?.stockQuantity || 0;
+                  const hasStockAvailable = !!matchingStockProduct && availableStock >= item.qty;
+                  const isRestocked = (displayStatus === 'BACKORDER' || !!item.expectedRestockDate) && !!matchingStockProduct && availableStock >= item.qty;
+                  const needsPurchaseFollowup = isPending || displayStatus === 'BACKORDER' || displayStatus === 'ALTERNATIVE_SELECTED';
+                  const orderItemsForView = visibleItemsByOrder.get(item.orderId) || [];
+                  const isLastVisibleOrderItem = orderItemsForView[orderItemsForView.length - 1]?.id === item.id;
+                  const orderSummary = printableOrderSummaries.get(item.orderId);
+                  const rowClass = isRestocked
+                    ? 'bg-emerald-100 hover:bg-emerald-200'
+                    : orderIsCompleted
+                      ? 'bg-emerald-100 hover:bg-emerald-200'
+                      : displayStatus === 'REORDER'
+                        ? 'bg-yellow-100 hover:bg-yellow-200/80'
+                        : displayStatus === 'BACKORDER'
+                          ? 'bg-orange-100 hover:bg-orange-200'
+                          : displayStatus === 'ALTERNATIVE_SELECTED'
+                            ? 'bg-blue-100 hover:bg-blue-200'
+                            : displayStatus === 'UNAVAILABLE'
+                              ? 'bg-red-200 hover:bg-red-300/80'
+                              : displayStatus === 'CANCELLED'
+                                ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                : 'bg-white hover:bg-pink-50/50';
+                  const badgeClass = isRestocked
+                    ? 'bg-emerald-600 text-white'
+                    : orderIsCompleted
+                      ? 'bg-emerald-600 text-white'
+                      : displayStatus === 'BACKORDER'
+                        ? 'bg-orange-200 text-orange-950'
+                        : displayStatus === 'ALTERNATIVE_SELECTED'
+                          ? 'bg-blue-200 text-blue-950'
+                          : displayStatus === 'REORDER'
+                            ? 'bg-yellow-300 text-yellow-950'
+                            : displayStatus === 'UNAVAILABLE'
+                              ? 'bg-red-600 text-white'
+                              : displayStatus === 'CANCELLED'
+                                ? 'bg-slate-300 text-slate-800'
+                                : isPurchased
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-emerald-100 text-emerald-800';
+                  const badgeLabel = isRestocked
+                    ? 'RESTOCKED / AVAILABLE'
+                    : orderIsCompleted
+                      ? 'COMPLETED'
+                      : displayStatus === 'REORDER'
+                        ? 'RE-ORDERED'
+                        : displayStatus === 'BACKORDER'
+                          ? 'BACKORDER'
+                          : displayStatus === 'ALTERNATIVE_SELECTED'
+                            ? 'ALTERNATIVE SELECTED'
+                            : displayStatus === 'UNAVAILABLE'
+                              ? 'NOT AVAILABLE'
+                              : displayStatus === 'CANCELLED'
+                                ? 'CANCELLED'
+                                : isPurchased
+                                  ? (isBoughtFromStock ? 'BOUGHT / ON HAND' : 'BOUGHT')
+                                  : 'ACTIVE';
 
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setItemToPurchase(null)}
-                    className="flex-1 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleConfirmPurchase}
-                    className="flex-1 py-2.5 text-xs font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 shadow-xs"
-                  >
-                    Confirm Purchased
-                  </button>
+                  return <tr key={item.id} className={`border-b border-slate-200 transition-colors ${rowClass}`}>
+                    <td className="whitespace-nowrap px-2 py-2 font-bold"><span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-black tracking-wide ${badgeClass}`}>{badgeLabel}</span></td>
+                    <td className="px-2 py-2 font-semibold">{item.storeName || 'Store'}</td>
+                    <td className="max-w-40 px-2 py-2"><span className="font-semibold text-slate-800">{parentOrder?.customerName || 'Walk-in Customer'}</span>{parentOrder && <small className="mt-0.5 block text-slate-500">{parentOrder.orderNo}</small>}</td>
+                    <td className="px-2 py-2"><span className="font-semibold text-slate-900">{item.productName}</span>{item.notes && <small className="mt-0.5 block text-slate-600">Note: {item.notes}</small>}{isPending && matchingStockProduct && availableStock > 0 && <small className={`mt-1 inline-flex rounded-md px-1.5 py-0.5 font-semibold ${hasStockAvailable ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{hasStockAvailable ? `In stock: ${availableStock} ${item.unit}` : `Stock alert: ${availableStock} ${item.unit} available · ${item.qty - availableStock} short`}</small>}{isPending && matchingStockProduct && availableStock <= 0 && <small className="mt-1 inline-flex rounded-md bg-red-100 px-1.5 py-0.5 font-semibold text-red-800">Out of stock</small>}{isRestocked && <small className="mt-1 inline-flex rounded-md bg-emerald-200 px-1.5 py-0.5 font-semibold text-emerald-900">Restocked: {availableStock} {item.unit} · follow up to buy</small>}{item.selectedAlternativeProductName && <small className="mt-1 block text-blue-900">Option: {item.selectedAlternativeProductName} · {item.selectedAlternativeSupplier} · ₱{item.selectedAlternativePrice?.toFixed(2)} ({(item.selectedAlternativePrice || 0) - item.estimatedPrice >= 0 ? '+' : '−'}₱{Math.abs((item.selectedAlternativePrice || 0) - item.estimatedPrice).toFixed(2)})</small>}{item.expectedRestockDate && <small className="mt-0.5 block text-slate-600">Expected restock: {item.expectedRestockDate}</small>}</td>
+                    <td className="whitespace-nowrap px-2 py-2 text-right">₱{price.toFixed(2)}<small className="block text-slate-500">/{item.unit}</small></td>
+                    <td className="px-2 py-2 text-center">{item.qty}</td>
+                    <td className="whitespace-nowrap px-2 py-2 text-right font-semibold">₱{lineAmount.toFixed(2)}</td>
+                    <td className="whitespace-nowrap px-2 py-2 text-right font-semibold">{isLastVisibleOrderItem && orderSummary ? `₱${orderSummary.subtotal.toFixed(2)}` : ''}</td>
+                    <td className="whitespace-nowrap px-2 py-2 text-right">{isLastVisibleOrderItem && orderSummary ? `₱${orderSummary.fee.toFixed(2)}` : ''}</td>
+                    <td className="whitespace-nowrap px-2 py-2 text-right font-black">{isLastVisibleOrderItem && orderSummary ? <><span>₱{orderSummary.grandTotal.toFixed(2)}</span>{(orderSummary.delivery > 0 || orderSummary.discount > 0) && <small className="block font-normal text-slate-600">{orderSummary.delivery > 0 ? `Rider +₱${orderSummary.delivery.toFixed(2)}` : ''}{orderSummary.delivery > 0 && orderSummary.discount > 0 ? ' · ' : ''}{orderSummary.discount > 0 ? `Disc. −₱${orderSummary.discount.toFixed(2)}` : ''}</small>}</> : ''}</td>
+                    <td className="min-w-[19rem] px-3 py-2.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {needsPurchaseFollowup && !orderIsCancelled && !orderIsCompleted && <>
+                          <div className="flex w-full flex-wrap items-center gap-1.5">
+                            {hasStockAvailable && <button onClick={() => handleFulfillFromStock(item)} className="flex items-center gap-1 rounded-lg bg-pink-100 px-2.5 py-2 text-[10px] font-bold text-pink-800 hover:bg-pink-200" title={`Fulfill from ${availableStock} units of on-hand stock`}><Boxes className="h-3 w-3" />Use stock ({availableStock})</button>}
+                            <button onClick={() => handleOpenPurchase(item)} className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-2 text-[10px] font-bold text-white hover:bg-emerald-700"><Check className="h-3 w-3" />Bought</button>
+                          </div>
+                          <div className="flex w-full flex-wrap items-center gap-1.5 border-t border-slate-300/70 pt-2">
+                            <button onClick={() => handleSetStatus(item, 'REORDER')} className="flex items-center gap-1 rounded-lg bg-yellow-200 px-2.5 py-2 text-[10px] font-bold text-yellow-950 hover:bg-yellow-300"><RotateCcw className="h-3 w-3" />Re-order</button>
+                            <button aria-label={`Mark ${item.productName} unavailable`} title="Mark unavailable" onClick={() => void handleMarkUnavailableAndOpen(item)} className="flex items-center gap-1 rounded-lg bg-red-100 px-2.5 py-2 text-[10px] font-bold text-red-800 hover:bg-red-200"><XCircle className="h-3.5 w-3.5" />Not available</button>
+                            <button aria-label={`Cancel ${item.productName}`} title="Cancel item" onClick={() => setCancelItemTarget(item)} className="flex items-center gap-1 rounded-lg bg-slate-200 px-2.5 py-2 text-[10px] font-bold text-slate-700 hover:bg-red-100 hover:text-red-800"><Ban className="h-3 w-3" />Cancel</button>
+                          </div>
+                        </>}
+                        {isPurchased && !orderIsCancelled && !orderIsCompleted && <>
+                          <span className="text-[10px] font-semibold text-emerald-700">{isBoughtFromStock ? 'From Stock' : 'Purchased'}</span>
+                          <button onClick={() => handleSetStatus(item, 'PENDING')} className="flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-200" title="Reset to pending"><RotateCcw className="h-3 w-3" />Undo</button>
+                        </>}
+                        {displayStatus === 'REORDER' && !orderIsCancelled && !orderIsCompleted && <div className="flex w-full flex-wrap items-center gap-1.5 border-t border-slate-300/70 pt-2">
+                          <button onClick={() => handleOpenPurchase(item)} className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-2 text-[10px] font-bold text-white hover:bg-emerald-700"><Check className="h-3 w-3" />Bought</button>
+                        </div>}
+                        {(displayStatus === 'UNAVAILABLE' || displayStatus === 'BACKORDER' || displayStatus === 'ALTERNATIVE_SELECTED') && !orderIsCancelled && !orderIsCompleted && <button onClick={() => openUnavailablePanel(item)} className="rounded-lg bg-white px-2 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm hover:bg-slate-100">Review options</button>}
+                        {displayStatus === 'CANCELLED' && !orderIsCancelled && !orderIsCompleted && <button onClick={() => handleSetStatus(item, 'PENDING')} className="rounded-lg bg-white px-2 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm hover:bg-slate-100">Restore</button>}
+                        {orderIsCancelled && <span className="text-[10px] font-semibold text-slate-500">Order cancelled</span>}
+                        {orderIsCompleted && <span className="text-[10px] font-semibold text-emerald-700">Order complete</span>}
+                        {isLastVisibleOrderItem && parentOrder && (currentUser?.role === 'Admin' || currentUser?.role === 'Staff') && <button type="button" onClick={() => setDeleteOrderTarget(parentOrder)} title={`Move ${parentOrder.orderNo} to Archive`} className="flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-[10px] font-bold text-slate-700 hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800"><Trash2 className="h-3.5 w-3.5" />Archive order</button>}
+                      </div>
+                    </td>
+                  </tr>;
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {unavailableItem && createPortal(
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={() => setUnavailableItem(null)}>
+          <section role="dialog" aria-modal="true" aria-labelledby="unavailable-panel-title" className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl" onClick={event => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-700">Recommendation panel</p>
+                <h3 id="unavailable-panel-title" className="mt-1 text-lg font-black text-slate-900">{unavailableItem.productName}</h3>
+                <p className="mt-0.5 text-xs text-slate-500">Original quantity: {unavailableItem.qty} {unavailableItem.unit} · Original estimate: ₱{unavailableItem.estimatedPrice.toFixed(2)} / {unavailableItem.unit}</p>
+                <span className="mt-2 inline-flex rounded-full bg-red-100 px-2.5 py-1 text-[10px] font-black tracking-wide text-red-800">NOT AVAILABLE</span>
+              </div>
+              <button type="button" onClick={() => setUnavailableItem(null)} aria-label="Close recommendations" className="rounded-xl bg-slate-100 p-2 text-slate-600 hover:bg-slate-200"><X className="h-4 w-4" /></button>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-red-100 bg-red-50/70 p-3">
+              <label className="block text-xs font-bold text-slate-800">Reason supplier could not provide this item</label>
+              <textarea value={unavailableReason} onChange={event => setUnavailableReason(event.target.value)} rows={2} placeholder="For example: temporarily out of stock" className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-300" />
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500">
+                <span>Marked by {unavailableItem.unavailableBy || staffName}{unavailableItem.unavailableAt ? ` · ${new Date(unavailableItem.unavailableAt).toLocaleString()}` : ''}</span>
+                <button type="button" onClick={handleRecordUnavailable} className="rounded-lg bg-red-700 px-3 py-2 font-bold text-white hover:bg-red-800">{unavailableItem.status === 'UNAVAILABLE' ? 'Save reason' : 'Record unavailable'}</button>
+              </div>
+            </div>
+
+            <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50 p-3 text-xs">
+              <p className="font-black text-blue-950">Recommended action</p>
+              <p className="mt-1 text-blue-900">{recommendedAlternative
+                ? `Review ${recommendedAlternative.name} from ${recommendedAlternative.store} at ₱${recommendedAlternative.price.toFixed(2)} per ${recommendedAlternative.unit} (lowest recorded catalog price among matches).`
+                : expectedRestockDate
+                  ? `Wait for the expected restock on ${expectedRestockDate}, then verify availability before buying.`
+                  : 'No matching alternative supplier is recorded. Backorder the item or wait for restocking.'}</p>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 p-3 sm:col-span-2">
+                <div className="flex items-center gap-2">
+                  <PackageSearch className="h-4 w-4 text-blue-700" />
+                  <h4 className="text-sm font-black text-slate-900">Find another supplier</h4>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">Search recorded POS products. Choosing one records it for review; the original order item and price stay unchanged.</p>
+                <input value={supplierSearch} onChange={event => setSupplierSearch(event.target.value)} placeholder="Search product or category in catalog..." className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none focus:border-blue-300" />
+                <div className="mt-2 max-h-48 space-y-2 overflow-y-auto">
+                  {alternativeProducts.map(product => {
+                    const difference = product.price - unavailableItem.estimatedPrice;
+                    return <div key={product.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-2.5">
+                      <div className="min-w-0"><p className="truncate text-xs font-bold text-slate-900">{product.name}</p><p className="text-[10px] text-slate-600">Supplier: {product.store} · ₱{product.price.toFixed(2)} / {product.unit}</p><p className={`text-[10px] font-semibold ${difference <= 0 ? 'text-emerald-700' : 'text-amber-700'}`}>Difference: {difference < 0 ? '−' : '+'}₱{Math.abs(difference).toFixed(2)} per unit</p></div>
+                      <button type="button" onClick={() => handleSelectAlternative(product)} className="shrink-0 rounded-lg bg-blue-700 px-3 py-2 text-[10px] font-bold text-white hover:bg-blue-800">Select for review</button>
+                    </div>;
+                  })}
+                  {!!supplierSearch.trim() && alternativeProducts.length === 0 && <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">No matching products from another recorded supplier are in the POS catalog.</p>}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-orange-200 bg-orange-50/60 p-3">
+                <div className="flex items-center gap-2"><RotateCcw className="h-4 w-4 text-orange-700" /><h4 className="text-sm font-black text-slate-900">Backorder</h4></div>
+                <p className="mt-1 text-[11px] text-slate-600">Keep this item in the list and flag it for supplier follow-up.</p>
+                <button type="button" onClick={handleBackorder} className="mt-3 w-full rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white hover:bg-orange-700">Add to backorder</button>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3">
+                <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-emerald-700" /><h4 className="text-sm font-black text-slate-900">Wait for restocking</h4></div>
+                <p className="mt-1 text-[11px] text-slate-600">Keep it pending; available catalog stock will show a live restock notice.</p>
+                <input type="date" value={expectedRestockDate} onChange={event => setExpectedRestockDate(event.target.value)} aria-label="Expected restock date" className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs" />
+                <button type="button" onClick={handleWaitForRestock} className="mt-2 w-full rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800">Keep pending</button>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div><h4 className="text-sm font-black text-slate-900">Remove item</h4><p className="mt-1 text-[11px] text-slate-600">Soft-removes it from the buying list after confirmation and keeps its order history.</p></div>
+                  <button type="button" onClick={handleRemoveUnavailableItem} className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50">Remove item…</button>
                 </div>
               </div>
             </div>
-          )}
+
+            {!!unavailableItem.availabilityHistory?.length && <div className="mt-4 rounded-2xl border border-slate-200 p-3">
+              <div className="flex items-center gap-2"><ClipboardList className="h-4 w-4 text-slate-600" /><h4 className="text-xs font-black text-slate-800">Availability history</h4></div>
+              <ul className="mt-2 max-h-32 space-y-1.5 overflow-y-auto text-[10px] text-slate-600">
+                {[...unavailableItem.availabilityHistory].reverse().map((entry, index) => <li key={`${entry.at}-${index}`} className="border-l-2 border-slate-200 pl-2"><strong className="text-slate-800">{entry.action}</strong> · {entry.by} · {new Date(entry.at).toLocaleString()}{entry.reason && <> · {entry.reason}</>}{entry.expectedRestockDate && <> · Expected {entry.expectedRestockDate}</>}{entry.alternativeProductName && <> · {entry.alternativeProductName} ({entry.alternativeSupplier}) · Δ ₱{entry.priceDifference?.toFixed(2)}</>}</li>)}
+              </ul>
+            </div>}
+          </section>
+        </div>, document.body
+      )}
+
+      {/* Actual Price Prompt Modal */}
+      {itemToPurchase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-5 border border-slate-200 space-y-4">
+            <div>
+              <span className="text-[10px] font-bold text-pink-700 uppercase tracking-wider">
+                Confirm Purchase
+              </span>
+              <h3 className="text-base font-bold text-slate-900 mt-0.5">
+                {itemToPurchase.qty}x {itemToPurchase.selectedAlternativeProductName || itemToPurchase.productName}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {itemToPurchase.selectedAlternativeProductName
+                  ? `Alternative for ${itemToPurchase.productName} · Supplier: ${itemToPurchase.selectedAlternativeSupplier} · Est: ₱${(itemToPurchase.selectedAlternativePrice || 0).toFixed(2)}`
+                  : `Store: ${itemToPurchase.storeName} · Est: ₱${itemToPurchase.estimatedPrice.toFixed(2)}`}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Actual Purchase Unit Price (₱) *
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                autoFocus
+                value={actualPriceInput}
+                onChange={e => setActualPriceInput(e.target.value)}
+                className="w-full px-3 py-2 text-lg font-black text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-600"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">
+                Total will be: ₱{roundMoney(itemToPurchase.qty * (parseFloat(actualPriceInput) || 0)).toFixed(2)}
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setItemToPurchase(null)}
+                className="flex-1 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmPurchase}
+                className="flex-1 py-2.5 text-xs font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 shadow-xs"
+              >
+                Confirm Purchased
+              </button>
+            </div>
+          </div>
         </div>
-      );
+      )}
+    </div>
+  );
 };

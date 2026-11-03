@@ -277,7 +277,7 @@ export const ReportsView: React.FC = () => {
     addToast('Financial Report CSV exported', 'success');
   };
 
-  // 2. EXPORT EXCEL (Executive Financial Model Spreadsheet)
+  // 2. EXPORT EXCEL (Executive Financial Model Spreadsheet - Branded Pink & Slate)
   const exportExcel = () => {
     setExportOpen(false);
     const filename = `financial-statement-${range.from}-to-${range.to}.xls`;
@@ -286,9 +286,9 @@ export const ReportsView: React.FC = () => {
       const isNet = label.includes('Net Operating Profit');
       const isGross = label.includes('Gross Operating Profit');
       return `
-        <tr style="height:24px;${isNet ? 'background:#F1F5F9;font-weight:bold;border-top:1pt solid #0F172A;border-bottom:2pt double #0F172A;' : isGross ? 'font-weight:bold;background:#F8FAFC;' : ''}">
-          <td style="padding:6px 12px;border:0.5pt solid #CBD5E1;font-size:10pt;">${escapeHtml(label)}</td>
-          <td style="padding:6px 12px;text-align:right;border:0.5pt solid #CBD5E1;font-family:'Consolas','Courier New',monospace;font-size:10pt;color:${val < 0 ? '#DC2626' : '#0F172A'};">
+        <tr style="height:24px;${isNet ? 'background:#FFF1F5;font-weight:bold;border-top:1.5pt solid #C90052;border-bottom:3pt double #C90052;' : isGross ? 'font-weight:bold;background:#FFF5F8;' : ''}">
+          <td style="padding:6px 12px;border:0.5pt solid #FECDD3;font-size:10pt;color:${isNet ? '#9F1239' : '#0F172A'};">${escapeHtml(label)}</td>
+          <td style="padding:6px 12px;text-align:right;border:0.5pt solid #FECDD3;font-family:'Consolas','Courier New',monospace;font-size:10pt;color:${val < 0 ? '#DC2626' : isNet ? '#C90052' : '#0F172A'};font-weight:${isNet || isGross ? 'bold' : 'normal'};">
             ${val < 0 ? `(₱${Math.abs(val).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})` : `₱${val.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           </td>
         </tr>
@@ -296,17 +296,17 @@ export const ReportsView: React.FC = () => {
     }).join('');
 
     const rowsHtml = filteredRows.map((row, i) => `
-      <tr style="height:22px;background:${i % 2 === 0 ? '#FFFFFF' : '#F8FAFC'};">
-        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;font-size:9pt;">${escapeHtml(new Date(row.date).toLocaleString('en-PH'))}</td>
-        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;font-family:'Consolas',monospace;font-weight:bold;font-size:9pt;">${escapeHtml(row.reference)}</td>
-        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;text-align:center;font-size:9pt;font-weight:bold;">${escapeHtml(row.type)}</td>
-        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;font-size:9pt;">${escapeHtml(row.description)}</td>
-        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;font-size:9pt;color:#64748B;">${escapeHtml(row.relatedOrder || '—')}</td>
-        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;font-size:9pt;color:#475569;">${escapeHtml(row.method)}</td>
-        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;text-align:right;font-family:'Consolas',monospace;font-weight:bold;font-size:9pt;">
+      <tr style="height:22px;background:${i % 2 === 0 ? '#FFFFFF' : '#FFF5F8'};">
+        <td style="padding:5px 8px;border:0.5pt solid #FECDD3;font-size:9pt;">${escapeHtml(new Date(row.date).toLocaleString('en-PH'))}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #FECDD3;font-family:'Consolas',monospace;font-weight:bold;font-size:9pt;color:#9F1239;">${escapeHtml(row.reference)}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #FECDD3;text-align:center;font-size:9pt;font-weight:bold;">${escapeHtml(row.type)}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #FECDD3;font-size:9pt;">${escapeHtml(row.description)}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #FECDD3;font-size:9pt;color:#64748B;">${escapeHtml(row.relatedOrder || '—')}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #FECDD3;font-size:9pt;color:#475569;">${escapeHtml(row.method)}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #FECDD3;text-align:right;font-family:'Consolas',monospace;font-weight:bold;font-size:9pt;color:#C90052;">
           ₱${row.amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </td>
-        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;text-align:center;font-size:8.5pt;font-weight:bold;">${escapeHtml(row.status)}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #FECDD3;text-align:center;font-size:8.5pt;font-weight:bold;">${escapeHtml(row.status)}</td>
       </tr>
     `).join('');
 
@@ -324,7 +324,7 @@ export const ReportsView: React.FC = () => {
           <table style="width:100%;margin-bottom:20px;">
             <tr>
               <td colspan="5">
-                <div style="font-size:16pt;font-weight:bold;color:#0F172A;letter-spacing:-0.5px;">${escapeHtml(storeName)}</div>
+                <div style="font-size:18pt;font-weight:900;color:#C90052;letter-spacing:-0.5px;">${escapeHtml(storeName)}</div>
                 <div style="color:#64748B;font-size:9.5pt;margin-top:2px;">${escapeHtml(storeAddress)} · Phone: ${escapeHtml(storePhone)} · Email: ${escapeHtml(storeEmail)}</div>
                 <div style="font-size:12pt;font-weight:bold;color:#451323;margin-top:10px;">STATEMENT OF FINANCIAL PERFORMANCE &amp; TRANSACTION AUDIT</div>
                 <div style="color:#475569;font-size:9pt;margin-top:2px;">Reporting Range: ${escapeHtml(periodLabel)} | Run Time: ${new Date().toLocaleString('en-PH')} | Prepared by: ${escapeHtml(preparer)}</div>
@@ -332,9 +332,9 @@ export const ReportsView: React.FC = () => {
             </tr>
           </table>
 
-          <table style="width:540px;margin-bottom:28px;border:1pt solid #0F172A;">
+          <table style="width:540px;margin-bottom:28px;border:1.5pt solid #C90052;">
             <thead>
-              <tr style="background:#0F172A;color:#FFFFFF;height:26px;">
+              <tr style="background:#C90052;color:#FFFFFF;height:26px;">
                 <th style="padding:6px 12px;text-align:left;font-size:10pt;font-weight:bold;">Executive Profit &amp; Loss Breakdown</th>
                 <th style="padding:6px 12px;text-align:right;font-size:10pt;font-weight:bold;">Amount (PHP)</th>
               </tr>
@@ -344,9 +344,9 @@ export const ReportsView: React.FC = () => {
             </tbody>
           </table>
 
-          <table style="width:100%;border:1pt solid #CBD5E1;">
+          <table style="width:100%;border:1.5pt solid #C90052;">
             <thead>
-              <tr style="background:#0F172A;color:#FFFFFF;font-weight:bold;font-size:9.5pt;height:26px;">
+              <tr style="background:#C90052;color:#FFFFFF;font-weight:bold;font-size:9.5pt;height:26px;">
                 <th style="padding:6px 8px;text-align:left;">Timestamp</th>
                 <th style="padding:6px 8px;text-align:left;">Reference #</th>
                 <th style="padding:6px 8px;text-align:center;">Type</th>
@@ -369,7 +369,7 @@ export const ReportsView: React.FC = () => {
     addToast('Financial Report Excel workbook exported', 'success');
   };
 
-  // 3. EXPORT DIRECT PDF (Executive Corporate A4 Landscape Statement)
+  // 3. EXPORT DIRECT PDF (Executive Corporate A4 Landscape Statement in Antique Pasabuy Pink)
   const exportPdf = async () => {
     setExportOpen(false);
     const target = document.getElementById('printable-financial-report');
@@ -379,14 +379,46 @@ export const ReportsView: React.FC = () => {
     }
 
     setIsExportingPdf(true);
-    addToast('Generating executive PDF statement...', 'info');
+    addToast('Generating Antique Pasabuy PDF statement...', 'info');
 
+    let container: HTMLElement | null = null;
     try {
       const dateStr = new Date().toISOString().split('T')[0];
       const filename = `financial-statement-${dateStr}.pdf`;
 
+      // 1. Create a clean, unhidden clone
+      const clone = target.cloneNode(true) as HTMLElement;
+      clone.id = 'temp-pdf-financial-clone';
+      clone.classList.remove('hidden');
+      clone.classList.remove('print:block');
+      clone.style.display = 'block';
+      clone.style.visibility = 'visible';
+      clone.style.width = '1120px'; // 297mm landscape at 96dpi
+      clone.style.maxWidth = '1120px';
+      clone.style.background = '#ffffff';
+      clone.style.padding = '8mm';
+      clone.style.boxSizing = 'border-box';
+
+      // 2. Wrap in temporary offscreen-yet-visible container
+      container = document.createElement('div');
+      container.id = 'temp-financial-pdf-container';
+      container.style.position = 'fixed';
+      container.style.top = '0';
+      container.style.left = '0';
+      container.style.width = '1120px';
+      container.style.background = '#ffffff';
+      container.style.zIndex = '99999';
+      container.style.opacity = '0.01'; // Fully measurable by html2canvas without flashing to user
+      container.style.pointerEvents = 'none';
+      container.style.overflow = 'visible';
+      container.appendChild(clone);
+      document.body.appendChild(container);
+
+      // Wait 300ms for layout, webfonts, and base64 logo
+      await new Promise(r => setTimeout(r, 300));
+
       const opt = {
-        margin: [8, 8, 8, 8],
+        margin: [4, 4, 4, 4],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
@@ -403,51 +435,61 @@ export const ReportsView: React.FC = () => {
         }
       };
 
-      // Offscreen container at 0, 0 with high negative zIndex
-      const container = document.createElement('div');
-      container.style.position = 'fixed';
-      container.style.top = '0';
-      container.style.left = '0';
-      container.style.width = '297mm';
-      container.style.zIndex = '-9999';
-      container.style.opacity = '1';
-      container.style.pointerEvents = 'none';
-      container.style.background = '#ffffff';
-      container.style.padding = '8mm';
+      // Safely resolve html2pdf export runner
+      const html2pdfModule: any = await import('html2pdf.js');
+      const html2pdfRunner = html2pdfModule.default?.default || html2pdfModule.default || html2pdfModule;
 
-      const clone = target.cloneNode(true) as HTMLElement;
-      clone.style.display = 'block';
-      clone.style.visibility = 'visible';
-      container.appendChild(clone);
-      document.body.appendChild(container);
+      if (typeof html2pdfRunner !== 'function') {
+        throw new Error('PDF library failed to initialize runner function.');
+      }
 
-      await new Promise(r => setTimeout(r, 200));
-
-      const html2pdfModule = (await import('html2pdf.js')).default || (await import('html2pdf.js'));
-      await html2pdfModule().set(opt).from(clone).save();
-
-      document.body.removeChild(container);
-      addToast('Financial Statement PDF downloaded successfully', 'success');
+      await html2pdfRunner().set(opt).from(clone).save();
+      addToast('Financial Statement PDF downloaded successfully!', 'success');
     } catch (err: any) {
       console.error('PDF export error:', err);
-      addToast('Direct PDF export failed. Opening print view...', 'info');
-      printReport();
+      addToast('PDF generation issue: ' + (err?.message || 'Check console'), 'error');
     } finally {
+      // Clean up temporary container
+      if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+      const existing = document.getElementById('temp-financial-pdf-container');
+      if (existing) existing.remove();
+
+      // Clean up any stray html2canvas overlays to prevent screen freeze
+      document.querySelectorAll('iframe, .html2canvas-container').forEach(el => {
+        if (el.id?.includes('html2canvas') || el.className?.includes('html2canvas')) {
+          el.remove();
+        }
+      });
+
       setIsExportingPdf(false);
     }
   };
 
-  // 4. PRINT REPORT (Browser Print Dialog)
+  // 4. PRINT REPORT (Browser Print Dialog with Automatic Landscape Page Formatting)
   const printReport = () => {
     setExportOpen(false);
+
+    // Inject dedicated @page rule so print preview is instantly Landscape with zero cut-off
+    const styleId = '__financial-report-page-style__';
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `@page { size: A4 landscape; margin: 8mm; }`;
+
     document.body.classList.add('printing-financial-report');
     window.print();
     setTimeout(() => {
       document.body.classList.remove('printing-financial-report');
+      if (styleEl) styleEl.textContent = '';
     }, 1500);
   };
 
-  // Executive Branded Financial Statement Document (Standard Corporate Accounting Formatting)
+  // Executive Branded Financial Statement Document in Antique Pasabuy Pink & Clean Monospace
   const renderPrintDocument = () => (
     <article
       id="printable-financial-report"
@@ -457,13 +499,16 @@ export const ReportsView: React.FC = () => {
         lineHeight: 1.35
       }}
     >
+      {/* Top Pink Brand Accent Line */}
+      <div style={{ height: '5px', background: 'linear-gradient(90deg, #C90052 0%, #E60063 50%, #FF6584 100%)', borderRadius: '2px', marginBottom: '14px' }} />
+
       {/* Official Header */}
       <header
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          borderBottom: '2px solid #0F172A',
+          borderBottom: '2px solid #F43F5E',
           paddingBottom: '14px',
           marginBottom: '16px'
         }}
@@ -475,7 +520,7 @@ export const ReportsView: React.FC = () => {
             style={{ height: '48px', width: 'auto', objectFit: 'contain' }}
           />
           <div>
-            <div style={{ fontSize: '15px', fontWeight: 900, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '-0.3px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 900, color: '#451323', textTransform: 'uppercase', letterSpacing: '-0.3px' }}>
               {storeName}
             </div>
             <div style={{ fontSize: '10px', color: '#475569', marginTop: '2px' }}>
@@ -488,17 +533,17 @@ export const ReportsView: React.FC = () => {
         </div>
 
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '12px', fontWeight: 900, color: '#0F172A', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '13px', fontWeight: 900, color: '#C90052', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
             Statement of Financial Performance
           </div>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: '#451323', marginTop: '2px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: '#881337', marginTop: '2px' }}>
             Period Covered: {periodLabel}
           </div>
           <div style={{ fontSize: '9px', color: '#64748B', marginTop: '2px' }}>
             Document ID: STMT-{range.from.replace(/-/g, '')}-{range.to.replace(/-/g, '')} · Generated: {new Date().toLocaleString('en-PH')}
           </div>
           <div style={{ fontSize: '9px', color: '#64748B' }}>
-            Prepared By: {preparer}
+            Prepared By: <strong style={{ color: '#0F172A' }}>{preparer}</strong>
           </div>
         </div>
       </header>
@@ -506,39 +551,39 @@ export const ReportsView: React.FC = () => {
       {/* Dual Table P&L + Balance / Cash Position Summary */}
       <section style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px', marginBottom: '16px' }}>
         {/* Table 1: P&L Statement */}
-        <div style={{ border: '1px solid #CBD5E1', borderRadius: '4px', overflow: 'hidden' }}>
-          <div style={{ background: '#0F172A', color: '#FFFFFF', padding: '6px 10px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+        <div style={{ border: '1px solid #FECDD3', borderRadius: '6px', overflow: 'hidden' }}>
+          <div style={{ background: '#C90052', color: '#FFFFFF', padding: '6px 10px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
             I. Statement of Operating Profit &amp; Loss
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9.5px' }}>
             <tbody>
-              <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+              <tr style={{ borderBottom: '1px solid #FCE7EF' }}>
                 <td style={{ padding: '5px 10px', color: '#334155' }}>Gross Sales Revenue (Orders Fulfilled)</td>
-                <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace' }}>
+                <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace', color: '#0F172A' }}>
                   {peso(currentTotals.sales)}
                 </td>
               </tr>
-              <tr style={{ borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+              <tr style={{ borderBottom: '1px solid #FCE7EF', background: '#FFF5F8' }}>
                 <td style={{ padding: '5px 10px', color: '#334155' }}>Less: Cost of Goods Sold (Procurement)</td>
                 <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace', color: '#64748B' }}>
                   ({peso(currentTotals.cogs)})
                 </td>
               </tr>
-              <tr style={{ borderBottom: '1px solid #CBD5E1', background: '#F1F5F9', fontWeight: 800 }}>
-                <td style={{ padding: '6px 10px', color: '#0F172A' }}>Gross Operating Margin</td>
-                <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'Consolas, monospace', color: '#0F172A' }}>
+              <tr style={{ borderBottom: '1px solid #FECDD3', background: '#FFF1F5', fontWeight: 800 }}>
+                <td style={{ padding: '6px 10px', color: '#9F1239' }}>Gross Operating Margin</td>
+                <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'Consolas, monospace', color: '#9F1239' }}>
                   {peso(currentTotals.grossProfit)}
                 </td>
               </tr>
-              <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+              <tr style={{ borderBottom: '1px solid #FCE7EF' }}>
                 <td style={{ padding: '5px 10px', color: '#334155' }}>Less: Operating &amp; Store Expenses</td>
                 <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace', color: '#DC2626' }}>
                   ({peso(currentTotals.expenses)})
                 </td>
               </tr>
-              <tr style={{ background: '#FFFFFF', fontWeight: 900, borderTop: '1px solid #0F172A', borderBottom: '3px double #0F172A' }}>
-                <td style={{ padding: '7px 10px', fontSize: '10.5px', color: '#0F172A' }}>NET OPERATING PROFIT / (LOSS)</td>
-                <td style={{ padding: '7px 10px', fontSize: '11px', textAlign: 'right', fontFamily: 'Consolas, monospace', color: currentTotals.netProfit < 0 ? '#DC2626' : '#0F172A' }}>
+              <tr style={{ background: '#FFF1F5', fontWeight: 900, borderTop: '1px solid #C90052', borderBottom: '3px double #C90052' }}>
+                <td style={{ padding: '7px 10px', fontSize: '10.5px', color: '#9F1239' }}>NET OPERATING PROFIT / (LOSS)</td>
+                <td style={{ padding: '7px 10px', fontSize: '11px', textAlign: 'right', fontFamily: 'Consolas, monospace', color: currentTotals.netProfit < 0 ? '#DC2626' : '#C90052' }}>
                   {peso(currentTotals.netProfit)}
                 </td>
               </tr>
@@ -547,39 +592,39 @@ export const ReportsView: React.FC = () => {
         </div>
 
         {/* Table 2: Working Capital & Position */}
-        <div style={{ border: '1px solid #CBD5E1', borderRadius: '4px', overflow: 'hidden' }}>
-          <div style={{ background: '#334155', color: '#FFFFFF', padding: '6px 10px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+        <div style={{ border: '1px solid #FECDD3', borderRadius: '6px', overflow: 'hidden' }}>
+          <div style={{ background: '#A0153E', color: '#FFFFFF', padding: '6px 10px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
             II. Receivables &amp; Collections Position
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9.5px' }}>
             <tbody>
-              <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+              <tr style={{ borderBottom: '1px solid #FCE7EF' }}>
                 <td style={{ padding: '5px 10px', color: '#334155' }}>Total Payments Collected &amp; Received</td>
                 <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace', color: '#0F172A' }}>
                   {peso(currentTotals.collected)}
                 </td>
               </tr>
-              <tr style={{ borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+              <tr style={{ borderBottom: '1px solid #FCE7EF', background: '#FFF5F8' }}>
                 <td style={{ padding: '5px 10px', color: '#334155' }}>Outstanding Accounts Receivable</td>
                 <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace', color: '#D97706' }}>
                   {peso(currentTotals.outstanding)}
                 </td>
               </tr>
-              <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+              <tr style={{ borderBottom: '1px solid #FCE7EF' }}>
                 <td style={{ padding: '5px 10px', color: '#334155' }}>Total Logged Activity Records</td>
                 <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace' }}>
                   {filteredRows.length} events
                 </td>
               </tr>
-              <tr style={{ borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+              <tr style={{ borderBottom: '1px solid #FCE7EF', background: '#FFF5F8' }}>
                 <td style={{ padding: '5px 10px', color: '#334155' }}>Gross Margin Ratio</td>
-                <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace' }}>
+                <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace', color: '#0F172A' }}>
                   {currentTotals.sales > 0 ? `${((currentTotals.grossProfit / currentTotals.sales) * 100).toFixed(1)}%` : '0.0%'}
                 </td>
               </tr>
-              <tr style={{ background: '#FFFFFF', fontWeight: 800, borderTop: '1px solid #0F172A', borderBottom: '3px double #0F172A' }}>
-                <td style={{ padding: '7px 10px', fontSize: '10px', color: '#0F172A' }}>Net Operating Margin Ratio</td>
-                <td style={{ padding: '7px 10px', textAlign: 'right', fontFamily: 'Consolas, monospace', color: currentTotals.netProfit < 0 ? '#DC2626' : '#0F172A' }}>
+              <tr style={{ background: '#FFF1F5', fontWeight: 800, borderTop: '1px solid #A0153E', borderBottom: '3px double #A0153E' }}>
+                <td style={{ padding: '7px 10px', fontSize: '10px', color: '#881337' }}>Net Operating Margin Ratio</td>
+                <td style={{ padding: '7px 10px', textAlign: 'right', fontFamily: 'Consolas, monospace', color: currentTotals.netProfit < 0 ? '#DC2626' : '#A0153E' }}>
                   {currentTotals.sales > 0 ? `${((currentTotals.netProfit / currentTotals.sales) * 100).toFixed(1)}%` : '0.0%'}
                 </td>
               </tr>
@@ -590,54 +635,54 @@ export const ReportsView: React.FC = () => {
 
       {/* Itemized Audit Ledger */}
       <div style={{ marginBottom: '18px' }}>
-        <div style={{ fontSize: '10px', fontWeight: 800, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px' }}>
+        <div style={{ fontSize: '10px', fontWeight: 800, color: '#C90052', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px' }}>
           III. Itemized Transaction Audit Register
         </div>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5px' }}>
           <thead>
-            <tr style={{ background: '#0F172A', color: '#FFFFFF', fontWeight: 800 }}>
-              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #0F172A' }}>Date &amp; Time</th>
-              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #0F172A' }}>Reference #</th>
-              <th style={{ padding: '5px 6px', textAlign: 'center', border: '0.5pt solid #0F172A' }}>Type</th>
-              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #0F172A' }}>Customer / Payee Particulars</th>
-              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #0F172A' }}>Category / Ref</th>
-              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #0F172A' }}>Payment Channel</th>
-              <th style={{ padding: '5px 6px', textAlign: 'right', border: '0.5pt solid #0F172A' }}>Amount (PHP)</th>
-              <th style={{ padding: '5px 6px', textAlign: 'center', border: '0.5pt solid #0F172A' }}>Reconciliation</th>
+            <tr style={{ background: '#C90052', color: '#FFFFFF', fontWeight: 800 }}>
+              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #A0153E' }}>Date &amp; Time</th>
+              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #A0153E' }}>Reference #</th>
+              <th style={{ padding: '5px 6px', textAlign: 'center', border: '0.5pt solid #A0153E' }}>Type</th>
+              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #A0153E' }}>Customer / Payee Particulars</th>
+              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #A0153E' }}>Category / Ref</th>
+              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #A0153E' }}>Payment Channel</th>
+              <th style={{ padding: '5px 6px', textAlign: 'right', border: '0.5pt solid #A0153E' }}>Amount (PHP)</th>
+              <th style={{ padding: '5px 6px', textAlign: 'center', border: '0.5pt solid #A0153E' }}>Reconciliation</th>
             </tr>
           </thead>
           <tbody>
             {filteredRows.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ padding: '16px', textAlign: 'center', color: '#94A3B8', border: '0.5pt solid #CBD5E1' }}>
+                <td colSpan={8} style={{ padding: '16px', textAlign: 'center', color: '#94A3B8', border: '0.5pt solid #FECDD3' }}>
                   No transaction events recorded within the specified statement range.
                 </td>
               </tr>
             ) : (
               filteredRows.map((row, idx) => (
-                <tr key={row.id} style={{ background: idx % 2 === 1 ? '#F8FAFC' : '#FFFFFF' }}>
-                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', whiteSpace: 'nowrap' }}>
+                <tr key={row.id} style={{ background: idx % 2 === 1 ? '#FFF5F8' : '#FFFFFF' }}>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #FCE7EF', whiteSpace: 'nowrap' }}>
                     {new Date(row.date).toLocaleString('en-PH')}
                   </td>
-                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', fontFamily: 'Consolas, monospace', fontWeight: 700 }}>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #FCE7EF', fontFamily: 'Consolas, monospace', fontWeight: 700, color: '#9F1239' }}>
                     {row.reference}
                   </td>
-                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', textAlign: 'center', fontWeight: 700, fontSize: '8px', textTransform: 'uppercase' }}>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #FCE7EF', textAlign: 'center', fontWeight: 700, fontSize: '8px', textTransform: 'uppercase' }}>
                     {row.type}
                   </td>
-                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', fontWeight: 500 }}>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #FCE7EF', fontWeight: 500 }}>
                     {row.description}
                   </td>
-                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', color: '#64748B' }}>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #FCE7EF', color: '#64748B' }}>
                     {row.relatedOrder || '—'}
                   </td>
-                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', color: '#475569' }}>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #FCE7EF', color: '#475569' }}>
                     {row.method}
                   </td>
-                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', textAlign: 'right', fontFamily: 'Consolas, monospace', fontWeight: 700 }}>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #FCE7EF', textAlign: 'right', fontFamily: 'Consolas, monospace', fontWeight: 700, color: '#C90052' }}>
                     {peso(row.amount)}
                   </td>
-                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', textAlign: 'center', fontWeight: 600, fontSize: '7.5px', textTransform: 'uppercase' }}>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #FCE7EF', textAlign: 'center', fontWeight: 600, fontSize: '7.5px', textTransform: 'uppercase' }}>
                     {row.status}
                   </td>
                 </tr>
@@ -648,30 +693,30 @@ export const ReportsView: React.FC = () => {
       </div>
 
       {/* Official Attestation & Tripartite Sign-off */}
-      <footer style={{ borderTop: '1px solid #CBD5E1', paddingTop: '12px', marginTop: '16px' }}>
+      <footer style={{ borderTop: '1px solid #FECDD3', paddingTop: '12px', marginTop: '16px' }}>
         <div style={{ fontSize: '8px', color: '#64748B', textAlign: 'center', marginBottom: '14px', fontStyle: 'italic' }}>
           "I hereby certify and declare that this Financial Performance Statement and Audit Trail presents an accurate, complete, and verifiable record of all sales, revenues, and expenditures incurred by Antique Pasabuy &amp; Retail for the declared period."
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '30px', textAlign: 'center', fontSize: '9px' }}>
           <div>
-            <div style={{ color: '#64748B', fontSize: '8.5px', textTransform: 'uppercase', fontWeight: 700 }}>Prepared &amp; Compiled By:</div>
-            <div style={{ marginTop: '28px', borderBottom: '1px solid #475569', width: '80%', margin: '28px auto 0' }} />
-            <div style={{ fontWeight: 800, color: '#0F172A', marginTop: '4px' }}>{preparer}</div>
+            <div style={{ color: '#881337', fontSize: '8.5px', textTransform: 'uppercase', fontWeight: 700 }}>Prepared &amp; Compiled By:</div>
+            <div style={{ marginTop: '28px', borderBottom: '1.5px solid #C90052', width: '80%', margin: '28px auto 0' }} />
+            <div style={{ fontWeight: 800, color: '#451323', marginTop: '4px' }}>{preparer}</div>
             <div style={{ color: '#64748B', fontSize: '8px' }}>Authorized POS Operator</div>
           </div>
 
           <div>
-            <div style={{ color: '#64748B', fontSize: '8.5px', textTransform: 'uppercase', fontWeight: 700 }}>Audited &amp; Reconciled By:</div>
-            <div style={{ marginTop: '28px', borderBottom: '1px solid #475569', width: '80%', margin: '28px auto 0' }} />
-            <div style={{ fontWeight: 800, color: '#0F172A', marginTop: '4px' }}>Branch Operations Supervisor</div>
+            <div style={{ color: '#881337', fontSize: '8.5px', textTransform: 'uppercase', fontWeight: 700 }}>Audited &amp; Reconciled By:</div>
+            <div style={{ marginTop: '28px', borderBottom: '1.5px solid #C90052', width: '80%', margin: '28px auto 0' }} />
+            <div style={{ fontWeight: 800, color: '#451323', marginTop: '4px' }}>Branch Operations Supervisor</div>
             <div style={{ color: '#64748B', fontSize: '8px' }}>Internal Audit</div>
           </div>
 
           <div>
-            <div style={{ color: '#64748B', fontSize: '8.5px', textTransform: 'uppercase', fontWeight: 700 }}>Certified &amp; Approved By:</div>
-            <div style={{ marginTop: '28px', borderBottom: '1px solid #475569', width: '80%', margin: '28px auto 0' }} />
-            <div style={{ fontWeight: 800, color: '#0F172A', marginTop: '4px' }}>Proprietor / Executive Management</div>
+            <div style={{ color: '#881337', fontSize: '8.5px', textTransform: 'uppercase', fontWeight: 700 }}>Certified &amp; Approved By:</div>
+            <div style={{ marginTop: '28px', borderBottom: '1.5px solid #C90052', width: '80%', margin: '28px auto 0' }} />
+            <div style={{ fontWeight: 800, color: '#451323', marginTop: '4px' }}>Proprietor / Executive Management</div>
             <div style={{ color: '#64748B', fontSize: '8px' }}>Antique Pasabuy Operations</div>
           </div>
         </div>
@@ -1080,12 +1125,18 @@ export const ReportsView: React.FC = () => {
 };
 
 function downloadFile(content: string, filename: string, mime: string) {
-  const url = URL.createObjectURL(new Blob([content], { type: mime }));
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    if (link.parentNode) link.parentNode.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 300);
 }
 
 function escapeHtml(value: string) {
