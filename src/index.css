@@ -894,86 +894,40 @@
   @page buying-list-a4-portrait {
     size: A4 portrait;
     margin: 8mm;
-
-    @bottom-center {
-      content: "Page " counter(page) " of " counter(pages);
-      font-size: 8px;
-      color: #64748b;
-    }
   }
 
   @page buying-list-a4-landscape {
     size: A4 landscape;
     margin: 8mm;
-
-    @bottom-center {
-      content: "Page " counter(page) " of " counter(pages);
-      font-size: 8px;
-      color: #64748b;
-    }
   }
 
   @page buying-list-letter-portrait {
     size: letter portrait;
     margin: 8mm;
-
-    @bottom-center {
-      content: "Page " counter(page) " of " counter(pages);
-      font-size: 8px;
-      color: #64748b;
-    }
   }
 
   @page buying-list-letter-landscape {
     size: letter landscape;
     margin: 8mm;
-
-    @bottom-center {
-      content: "Page " counter(page) " of " counter(pages);
-      font-size: 8px;
-      color: #64748b;
-    }
   }
 
   @page buying-list-legal-portrait {
     size: legal portrait;
     margin: 8mm;
-
-    @bottom-center {
-      content: "Page " counter(page) " of " counter(pages);
-      font-size: 8px;
-      color: #64748b;
-    }
   }
 
   @page buying-list-legal-landscape {
     size: legal landscape;
     margin: 8mm;
-
-    @bottom-center {
-      content: "Page " counter(page) " of " counter(pages);
-      font-size: 8px;
-      color: #64748b;
-    }
   }
 
   @page buying-list-thermal-portrait {
     size: 80mm auto;
     margin: 2mm;
-
-    @bottom-center {
-      content: "Page " counter(page);
-      font-size: 7px;
-    }
   }
 
   @page buying-list-thermal-landscape {
     size: 80mm auto;
     margin: 2mm;
-
-    @bottom-center {
-      content: "Page " counter(page);
-      font-size: 7px;
-    }
   }
 }

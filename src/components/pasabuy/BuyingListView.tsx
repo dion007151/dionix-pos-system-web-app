@@ -243,57 +243,111 @@ export const BuyingListView: React.FC = () => {
     }));
   };
   const handlePrint = () => {
+    const isLandscape = printSettings.orientation === 'Landscape';
+    const paperSize = printSettings.paperSize === 'Thermal' ? '80mm auto'
+      : printSettings.paperSize === 'Legal' ? 'legal'
+        : printSettings.paperSize === 'Letter' ? 'letter'
+          : 'A4';
+    const sizeStr = printSettings.paperSize === 'Thermal'
+      ? '80mm auto'
+      : isLandscape ? `${paperSize} landscape` : `${paperSize} portrait`;
+
+    // Inject a scoped @page rule so the browser uses the correct paper size/orientation
+    const styleId = '__buying-list-page-style__';
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `@page { size: ${sizeStr}; margin: 8mm; }`;
+
     document.body.classList.add('printing-buying-list');
     window.print();
     setTimeout(() => {
       document.body.classList.remove('printing-buying-list');
+      if (styleEl) styleEl.textContent = '';
     }, 1500);
   };
 
   const handleDownloadPdf = async () => {
-    // Target the visible rendered preview inside the open settings modal
-    const target = document.querySelector('.buying-print-preview') as HTMLElement;
-    if (!target) {
-      addToast('Please keep print settings open to download PDF', 'error');
+    // Use #printable-buying-list (the hidden print-only clone) rendered offscreen
+    // to avoid html2canvas clipping issues inside overflow-hidden modal portals.
+    const source = document.getElementById('printable-buying-list') as HTMLElement;
+    if (!source) {
+      addToast('Buying list document is not ready for PDF export', 'error');
       return;
     }
 
     setIsExportingPdf(true);
-    addToast('Generating PDF file, please wait...', 'info');
+    addToast('Generating PDF, please wait…', 'info');
 
     try {
       const dateStr = new Date().toISOString().split('T')[0];
       const filename = `buying-list-${dateStr}.pdf`;
 
+      const isLandscape = printSettings.orientation === 'Landscape';
       const format = printSettings.paperSize === 'Legal' ? 'legal'
         : printSettings.paperSize === 'Letter' ? 'letter'
           : printSettings.paperSize === 'Thermal' ? [80, 297]
             : 'a4';
 
+      // Clone into an offscreen container so html2canvas can capture at full size
+      const container = document.createElement('div');
+      container.style.cssText = [
+        'position:fixed',
+        'top:0',
+        'left:0',
+        'width:' + (isLandscape ? '297mm' : '210mm'),
+        'background:#ffffff',
+        'z-index:-9999',
+        'pointer-events:none',
+        'opacity:1',
+        'overflow:visible',
+        'padding:8mm',
+      ].join(';');
+
+      const clone = source.cloneNode(true) as HTMLElement;
+      // Remove the screen-hiding class and force display block so html2canvas captures content
+      clone.classList.remove('buying-print-output');
+      clone.style.display = 'block';
+      clone.style.visibility = 'visible';
+      clone.style.width = isLandscape ? '297mm' : '210mm';
+      clone.style.padding = '8mm';
+      clone.style.background = '#ffffff';
+      clone.style.color = '#111827';
+      container.appendChild(clone);
+      document.body.appendChild(container);
+
+      // Allow layout to settle
+      await new Promise(r => setTimeout(r, 300));
+
       const opt = {
         margin: [4, 4, 4, 4],
-        filename: filename,
+        filename,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
           useCORS: true,
           logging: false,
           scrollY: 0,
-          scrollX: 0
+          scrollX: 0,
         },
         jsPDF: {
           unit: 'mm',
-          format: format,
-          orientation: printSettings.orientation.toLowerCase()
-        }
+          format,
+          orientation: printSettings.orientation.toLowerCase(),
+        },
       };
 
       const html2pdfModule = (await import('html2pdf.js')).default || (await import('html2pdf.js'));
-      await html2pdfModule().set(opt).from(target).save();
+      await html2pdfModule().set(opt).from(clone).save();
+
+      document.body.removeChild(container);
       addToast('Buying list PDF downloaded successfully!', 'success');
     } catch (err: any) {
       console.error('PDF export error:', err);
-      addToast('Direct PDF export encountered an issue. Opening Print dialog...', 'info');
+      addToast('PDF export failed. Opening print dialog instead…', 'info');
       handlePrint();
     } finally {
       setIsExportingPdf(false);
