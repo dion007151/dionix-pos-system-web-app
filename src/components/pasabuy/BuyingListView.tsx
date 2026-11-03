@@ -36,6 +36,7 @@ import {
   deriveOrderStatus,
   roundMoney
 } from '../../services/calc';
+import { SHOPPER_LOGO_DATA_URL } from '../../assets/shopperLogo';
 
 type PrintHeaderKey = 'businessName' | 'logo' | 'address' | 'contact' | 'title' | 'orderNumber' | 'datePrepared' | 'preparedBy' | 'supplier' | 'expectedDelivery';
 type PrintColumnKey = 'itemNumber' | 'barcode' | 'productName' | 'brand' | 'category' | 'description' | 'quantity' | 'unit' | 'unitCost' | 'totalCost' | 'supplier' | 'status' | 'remarks';
@@ -104,6 +105,7 @@ export const BuyingListView: React.FC = () => {
   const [printSettings, setPrintSettings] = useState<BuyingPrintSettings>(DEFAULT_PRINT_SETTINGS);
   const [printSettingsOpen, setPrintSettingsOpen] = useState(false);
   const [previewOnly, setPreviewOnly] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [deleteOrderTarget, setDeleteOrderTarget] = useState<Order | null>(null);
   const [cancelItemTarget, setCancelItemTarget] = useState<OrderItem | null>(null);
   const [archiving, setArchiving] = useState(false);
@@ -228,9 +230,54 @@ export const BuyingListView: React.FC = () => {
       [section]: { ...current[section], [key]: checked }
     }));
   };
-  const handleDownloadPdf = () => {
-    addToast('In the print dialog, choose Save as PDF to download this layout.', 'info');
-    window.print();
+  const handleDownloadPdf = async () => {
+    let target = document.getElementById('printable-buying-list');
+    if (!target) {
+      target = document.querySelector('.buying-print-preview') as HTMLElement;
+    }
+    if (!target) {
+      addToast('Document content not ready for PDF download', 'error');
+      return;
+    }
+
+    setIsExportingPdf(true);
+    addToast('Generating PDF file, please wait...', 'info');
+
+    try {
+      const dateStr = new Date().toISOString().split('T')[0];
+      const filename = `buying-list-${dateStr}.pdf`;
+
+      const format = printSettings.paperSize === 'Legal' ? 'legal'
+        : printSettings.paperSize === 'Letter' ? 'letter'
+        : printSettings.paperSize === 'Thermal' ? [80, 297]
+        : 'a4';
+
+      const opt = {
+        margin: [8, 8, 8, 8],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: format,
+          orientation: printSettings.orientation.toLowerCase()
+        }
+      };
+
+      const html2pdfModule = (await import('html2pdf.js')).default || (await import('html2pdf.js'));
+      await html2pdfModule().set(opt).from(target).save();
+      addToast('Buying list PDF downloaded successfully!', 'success');
+    } catch (err: any) {
+      console.error('PDF export error:', err);
+      addToast('Direct PDF export encountered an issue. Opening print dialog to Save as PDF...', 'info');
+      window.print();
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const getPageWidth = () => {
@@ -245,7 +292,7 @@ export const BuyingListView: React.FC = () => {
   const renderPrintDocument = (isPreview: boolean) => {
     const visibleColumns = PRINT_COLUMN_OPTIONS.filter(([key]) => printSettings.columns[key]);
     const pageName = `buying-list-${printSettings.paperSize.toLowerCase()}-${printSettings.orientation.toLowerCase()}`;
-    const logo = <img src="/your-shopper-logo.jpeg" alt={`${printBusinessName} logo`} className="buying-print-logo" />;
+    const logo = <img src={SHOPPER_LOGO_DATA_URL} alt={`${printBusinessName} logo`} className="buying-print-logo" />;
     const headerValue = (key: PrintHeaderKey) => printSettings.header[key];
     const summaryValue = (key: PrintSummaryKey) => printSettings.summary[key];
     const printHeaderGroup = printSettings.showCompanyHeader && (headerValue('businessName') || headerValue('logo') || headerValue('address') || headerValue('contact'));
@@ -780,7 +827,15 @@ export const BuyingListView: React.FC = () => {
               </div>
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => setPrintSettingsOpen(false)} className="rounded-lg bg-slate-100 px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-200">Cancel</button>
-                <button type="button" onClick={handleDownloadPdf} className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-bold text-blue-800 hover:bg-blue-100"><Download className="h-3.5 w-3.5" />Download PDF</button>
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  disabled={isExportingPdf}
+                  className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-60 transition-all"
+                >
+                  <Download className={`h-3.5 w-3.5 ${isExportingPdf ? 'animate-bounce' : ''}`} />
+                  <span>{isExportingPdf ? 'Generating PDF...' : 'Download PDF'}</span>
+                </button>
                 <button type="button" onClick={() => window.print()} className="flex items-center gap-1.5 rounded-lg bg-[#C90052] px-4 py-2 text-[11px] font-bold text-white hover:bg-[#E60063]"><Printer className="h-3.5 w-3.5" />Print</button>
               </div>
             </footer>

@@ -248,7 +248,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       localStorage.removeItem('antique_pasabuy_session_user');
       localStorage.removeItem('antique_pasabuy_session_id');
-    } catch {}
+    } catch { }
     setActiveView('dashboard');
   };
 
