@@ -604,7 +604,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  border: 1px solid #dbe1e8;
+  border: 1px solid #fecdd3;
+  background: #fff5f8;
   border-radius: 6px;
   padding: 7px;
 }
@@ -616,6 +617,7 @@
 
 .buying-print-summary strong {
   font-size: 1.1em;
+  color: #c90052;
 }
 
 .buying-print-table {
@@ -627,13 +629,14 @@
 
 .buying-print-table th {
   padding: 7px 5px;
-  background: #fce7ef;
-  color: #3f1727;
+  background: #c90052;
+  color: #ffffff;
   text-align: left;
   font-weight: 800;
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: normal;
+  border: 1px solid #a0153e;
 }
 
 .buying-print-table td {
@@ -647,7 +650,7 @@
 }
 
 .buying-print-document.alternate-rows .buying-print-table tbody tr.alternate {
-  background: #f8fafc;
+  background: #fff5f8;
 }
 
 .buying-print-document .buying-print-table tr.status-reorder {
@@ -827,14 +830,15 @@
   }
 
   #printable-buying-list .buying-print-table th {
-    padding: 5px 3px;
-    background: #fce7ef !important;
-    color: #111 !important;
-    font-weight: 800;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    word-break: normal;
-  }
+  padding: 5px 3px;
+  background: #c90052 !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  border: 1px solid #a0153e !important;
+}
 
   #printable-buying-list .buying-print-table td {
     padding: 4px 3px;
@@ -844,8 +848,8 @@
 
   #printable-buying-list.with-borders .buying-print-table th,
   #printable-buying-list.with-borders .buying-print-table td {
-    border: 1px solid #9ca3af !important;
-  }
+  border: 1px solid #fecdd3 !important;
+}
 
   #printable-buying-list:not(.with-borders) .buying-print-table tbody tr {
     border-bottom: 1px solid #e5e7eb;
@@ -861,8 +865,8 @@
   }
 
   #printable-buying-list.alternate-rows .buying-print-table tbody tr.alternate td {
-    background: #f8fafc !important;
-  }
+  background: #fff5f8 !important;
+}
 
   #printable-buying-list .buying-print-table tr.status-reorder td {
     background: #fef3c7 !important;
