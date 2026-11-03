@@ -280,7 +280,6 @@ export const BuyingListView: React.FC = () => {
     setIsExportingPdf(true);
     addToast('Generating Antique Pasabuy PDF...', 'info');
 
-    let container: HTMLElement | null = null;
     try {
       const dateStr = new Date().toISOString().split('T')[0];
       const filename = `buying-list-${dateStr}.pdf`;
@@ -288,87 +287,27 @@ export const BuyingListView: React.FC = () => {
       const isLandscape = printSettings.orientation === 'Landscape';
       const format = printSettings.paperSize === 'Legal' ? 'legal'
         : printSettings.paperSize === 'Letter' ? 'letter'
-          : printSettings.paperSize === 'Thermal' ? [80, 297]
+          : printSettings.paperSize === 'Thermal' ? ([80, 297] as [number, number])
             : 'a4';
 
-      const widthMm = printSettings.paperSize === 'Thermal' ? '80mm'
-        : isLandscape ? '297mm' : '210mm';
+      const widthMm = printSettings.paperSize === 'Thermal' ? 80
+        : isLandscape ? 297 : 210;
 
-      // Clone clean element
-      const clone = source.cloneNode(true) as HTMLElement;
-      clone.id = 'temp-pdf-buying-clone';
-      clone.classList.remove('buying-print-output');
-      clone.style.display = 'block';
-      clone.style.visibility = 'visible';
-      clone.style.width = widthMm;
-      clone.style.maxWidth = widthMm;
-      clone.style.padding = '8mm';
-      clone.style.background = '#ffffff';
-      clone.style.color = '#111827';
-      clone.style.boxSizing = 'border-box';
-
-      // Temporary measurable container (NOT negative z-index!)
-      container = document.createElement('div');
-      container.id = 'temp-buying-pdf-container';
-      container.style.position = 'fixed';
-      container.style.top = '0';
-      container.style.left = '0';
-      container.style.width = widthMm;
-      container.style.background = '#ffffff';
-      container.style.zIndex = '99999';
-      container.style.opacity = '0.01'; // Fully measurable by html2canvas, invisible to user
-      container.style.pointerEvents = 'none';
-      container.style.overflow = 'visible';
-      container.appendChild(clone);
-      document.body.appendChild(container);
-
-      // Wait 300ms for images, logo, and fonts
-      await new Promise(r => setTimeout(r, 300));
-
-      const opt = {
-        margin: [4, 4, 4, 4],
+      const { downloadElementAsPdf } = await import('../../services/pdfExport');
+      await downloadElementAsPdf(source, {
         filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          scrollY: 0,
-          scrollX: 0
-        },
-        jsPDF: {
-          unit: 'mm',
-          format,
-          orientation: printSettings.orientation.toLowerCase()
-        }
-      };
+        orientation: printSettings.orientation.toLowerCase() as 'landscape' | 'portrait',
+        format,
+        widthMm,
+        paddingMm: printSettings.paperSize === 'Thermal' ? 2 : 6,
+        scale: 2
+      });
 
-      const html2pdfModule: any = await import('html2pdf.js');
-      const html2pdfRunner = html2pdfModule.default?.default || html2pdfModule.default || html2pdfModule;
-
-      if (typeof html2pdfRunner !== 'function') {
-        throw new Error('PDF library runner failed to initialize.');
-      }
-
-      await html2pdfRunner().set(opt).from(clone).save();
       addToast('Buying list PDF downloaded successfully!', 'success');
     } catch (err: any) {
       console.error('PDF export error:', err);
       addToast('PDF export issue: ' + (err?.message || 'Check console'), 'error');
     } finally {
-      if (container && container.parentNode) {
-        container.parentNode.removeChild(container);
-      }
-      const existing = document.getElementById('temp-buying-pdf-container');
-      if (existing) existing.remove();
-
-      // Clean up any stray html2canvas overlays so screen NEVER freezes!
-      document.querySelectorAll('iframe, .html2canvas-container').forEach(el => {
-        if (el.id?.includes('html2canvas') || el.className?.includes('html2canvas')) {
-          el.remove();
-        }
-      });
-
       setIsExportingPdf(false);
     }
   };

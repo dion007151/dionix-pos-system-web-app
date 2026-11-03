@@ -48,5 +48,10 @@ export default defineConfig({
     productImageApi(),
     react(),
   ],
+  resolve: {
+    alias: {
+      html2canvas: 'html2canvas-pro',
+    },
+  },
 })
 

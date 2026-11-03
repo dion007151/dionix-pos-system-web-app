@@ -26,3 +26,5 @@ dist-ssr
 .vercel
 .claude
 .hurc-harness
+
+.env*

@@ -381,88 +381,24 @@ export const ReportsView: React.FC = () => {
     setIsExportingPdf(true);
     addToast('Generating Antique Pasabuy PDF statement...', 'info');
 
-    let container: HTMLElement | null = null;
     try {
       const dateStr = new Date().toISOString().split('T')[0];
       const filename = `financial-statement-${dateStr}.pdf`;
 
-      // 1. Create a clean, unhidden clone
-      const clone = target.cloneNode(true) as HTMLElement;
-      clone.id = 'temp-pdf-financial-clone';
-      clone.classList.remove('hidden');
-      clone.classList.remove('print:block');
-      clone.style.display = 'block';
-      clone.style.visibility = 'visible';
-      clone.style.width = '1120px'; // 297mm landscape at 96dpi
-      clone.style.maxWidth = '1120px';
-      clone.style.background = '#ffffff';
-      clone.style.padding = '8mm';
-      clone.style.boxSizing = 'border-box';
+      const { downloadElementAsPdf } = await import('../../services/pdfExport');
+      await downloadElementAsPdf(target, {
+        filename,
+        orientation: 'landscape',
+        format: 'a4',
+        paddingMm: 6,
+        scale: 2
+      });
 
-      // 2. Wrap in temporary offscreen-yet-visible container
-      container = document.createElement('div');
-      container.id = 'temp-financial-pdf-container';
-      container.style.position = 'fixed';
-      container.style.top = '0';
-      container.style.left = '0';
-      container.style.width = '1120px';
-      container.style.background = '#ffffff';
-      container.style.zIndex = '99999';
-      container.style.opacity = '0.01'; // Fully measurable by html2canvas without flashing to user
-      container.style.pointerEvents = 'none';
-      container.style.overflow = 'visible';
-      container.appendChild(clone);
-      document.body.appendChild(container);
-
-      // Wait 300ms for layout, webfonts, and base64 logo
-      await new Promise(r => setTimeout(r, 300));
-
-      const opt = {
-        margin: [4, 4, 4, 4],
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          scrollY: 0,
-          scrollX: 0
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'landscape'
-        }
-      };
-
-      // Safely resolve html2pdf export runner
-      const html2pdfModule: any = await import('html2pdf.js');
-      const html2pdfRunner = html2pdfModule.default?.default || html2pdfModule.default || html2pdfModule;
-
-      if (typeof html2pdfRunner !== 'function') {
-        throw new Error('PDF library failed to initialize runner function.');
-      }
-
-      await html2pdfRunner().set(opt).from(clone).save();
       addToast('Financial Statement PDF downloaded successfully!', 'success');
     } catch (err: any) {
       console.error('PDF export error:', err);
       addToast('PDF generation issue: ' + (err?.message || 'Check console'), 'error');
     } finally {
-      // Clean up temporary container
-      if (container && container.parentNode) {
-        container.parentNode.removeChild(container);
-      }
-      const existing = document.getElementById('temp-financial-pdf-container');
-      if (existing) existing.remove();
-
-      // Clean up any stray html2canvas overlays to prevent screen freeze
-      document.querySelectorAll('iframe, .html2canvas-container').forEach(el => {
-        if (el.id?.includes('html2canvas') || el.className?.includes('html2canvas')) {
-          el.remove();
-        }
-      });
-
       setIsExportingPdf(false);
     }
   };
