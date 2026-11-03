@@ -13,8 +13,23 @@ import {
   Shield,
   AlertCircle,
   CheckCircle2,
-  Store
+  Store,
+  Cloud,
+  RefreshCw,
+  X,
+  Check
 } from 'lucide-react';
+import {
+  isSupabaseConfigured,
+  getSavedSupabaseConfig,
+  saveSupabaseConfig,
+  clearSupabaseConfig
+} from '../../services/supabaseClient';
+import {
+  pullCloudUsersToLocal,
+  pushLocalUsersToCloud,
+  testSupabaseConnection
+} from '../../services/cloudSync';
 
 interface LoginPageProps {
   onLoginSuccess: (user: User, sessionId: string) => void;
@@ -44,14 +59,30 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [successMsg, setSuccessMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Cloud Sync Modal state for Multi-Device
+  const [showCloudModal, setShowCloudModal] = useState(false);
+  const [cloudUrl, setCloudUrl] = useState(() => getSavedSupabaseConfig()?.url || '');
+  const [cloudKey, setCloudKey] = useState(() => getSavedSupabaseConfig()?.anonKey || '');
+  const [cloudSyncing, setCloudSyncing] = useState(false);
+  const [cloudStatus, setCloudStatus] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   // Check if any accounts exist in database on startup
   useEffect(() => {
     async function checkUsers() {
       try {
+        if (isSupabaseConfigured()) {
+          try {
+            await pullCloudUsersToLocal();
+          } catch (e) {
+            console.warn('Auto-pull from cloud on startup:', e);
+          }
+        }
         const count = await db.users.count();
         setTotalAccounts(count);
         if (count === 0) {
           setMode('register');
+        } else {
+          setMode('signin');
         }
       } catch (err) {
         console.error('Error querying users:', err);
@@ -61,6 +92,49 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     }
     checkUsers();
   }, []);
+
+  const handleCloudSyncNow = async () => {
+    if (!cloudUrl.trim() || !cloudKey.trim()) {
+      setCloudStatus({ type: 'error', text: 'Please enter both Supabase URL and Anon Key.' });
+      return;
+    }
+
+    setCloudSyncing(true);
+    setCloudStatus(null);
+
+    try {
+      saveSupabaseConfig(cloudUrl.trim(), cloudKey.trim());
+      const conn = await testSupabaseConnection();
+      if (!conn.success) {
+        setCloudStatus({ type: 'error', text: conn.message });
+        return;
+      }
+
+      const pulled = await pullCloudUsersToLocal();
+      const count = await db.users.count();
+      setTotalAccounts(count);
+
+      if (count > 0) {
+        setMode('signin');
+        setCloudStatus({
+          type: 'success',
+          text: `Success! Connected to cloud and pulled accounts. You can now sign in.`
+        });
+        setTimeout(() => {
+          setShowCloudModal(false);
+        }, 1200);
+      } else {
+        setCloudStatus({
+          type: 'success',
+          text: `Connected to Supabase! No existing accounts found in cloud yet. Once you create an admin account, it will sync automatically.`
+        });
+      }
+    } catch (err: any) {
+      setCloudStatus({ type: 'error', text: err.message || 'Failed to sync with cloud.' });
+    } finally {
+      setCloudSyncing(false);
+    }
+  };
 
   const switchMode = (newMode: 'signin' | 'register') => {
     setMode(newMode);
@@ -115,6 +189,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         sessionId,
         'User logged in to POS'
       );
+
+      // Background push if Supabase is connected
+      if (isSupabaseConfigured()) {
+        pushLocalUsersToCloud().catch(err => console.warn('Cloud sync on login:', err));
+      }
 
       onLoginSuccess(user, sessionId);
     } catch (err) {
@@ -196,6 +275,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
       await db.users.add(newUser);
 
+      // Push to Supabase if configured so other devices receive this account immediately
+      if (isSupabaseConfigured()) {
+        try {
+          await pushLocalUsersToCloud();
+        } catch (cloudErr) {
+          console.warn('Could not push new user to Supabase:', cloudErr);
+        }
+      }
+
       await logActivity(
         newUser.id,
         newUser.username,
@@ -263,8 +351,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               type="button"
               onClick={() => switchMode('signin')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg transition-all duration-140 ${mode === 'signin'
-                  ? 'bg-white text-[#2B1720] shadow-xs font-bold border border-[#EACBD7]'
-                  : 'text-[#78636C] hover:text-[#2B1720]'
+                ? 'bg-white text-[#2B1720] shadow-xs font-bold border border-[#EACBD7]'
+                : 'text-[#78636C] hover:text-[#2B1720]'
                 }`}
             >
               <LogIn className="w-3.5 h-3.5" />
@@ -274,8 +362,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               type="button"
               onClick={() => switchMode('register')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg transition-all duration-140 ${mode === 'register'
-                  ? 'bg-white text-[#2B1720] shadow-xs font-bold border border-[#EACBD7]'
-                  : 'text-[#78636C] hover:text-[#2B1720]'
+                ? 'bg-white text-[#2B1720] shadow-xs font-bold border border-[#EACBD7]'
+                : 'text-[#78636C] hover:text-[#2B1720]'
                 }`}
             >
               <UserPlus className="w-3.5 h-3.5" />
@@ -401,8 +489,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     type="button"
                     onClick={() => setRegRole('Admin')}
                     className={`p-2.5 rounded-xl border text-left transition-all duration-140 ${regRole === 'Admin'
-                        ? 'border-[#C90052] bg-[#FFF2F6] text-[#2B1720] ring-1 ring-[#C90052]'
-                        : 'border-[#E8D2DC] bg-white text-[#78636C] hover:border-[#D4BCC8]'
+                      ? 'border-[#C90052] bg-[#FFF2F6] text-[#2B1720] ring-1 ring-[#C90052]'
+                      : 'border-[#E8D2DC] bg-white text-[#78636C] hover:border-[#D4BCC8]'
                       }`}
                   >
                     <div className="flex items-center gap-1.5 font-bold text-xs text-[#2B1720]">
@@ -418,8 +506,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     type="button"
                     onClick={() => setRegRole('Staff')}
                     className={`p-2.5 rounded-xl border text-left transition-all duration-140 ${regRole === 'Staff'
-                        ? 'border-[#C90052] bg-[#FFF2F6] text-[#2B1720] ring-1 ring-[#C90052]'
-                        : 'border-[#E8D2DC] bg-white text-[#78636C] hover:border-[#D4BCC8]'
+                      ? 'border-[#C90052] bg-[#FFF2F6] text-[#2B1720] ring-1 ring-[#C90052]'
+                      : 'border-[#E8D2DC] bg-white text-[#78636C] hover:border-[#D4BCC8]'
                       }`}
                   >
                     <div className="flex items-center gap-1.5 font-bold text-xs text-[#2B1720]">
@@ -540,7 +628,121 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             )}
           </div>
         </div>
+
+        {/* Multi-Device Cloud Sync Link */}
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            onClick={() => setShowCloudModal(true)}
+            className="inline-flex items-center gap-1.5 text-xs text-[#78636C] hover:text-[#C90052] font-medium transition-colors p-1"
+          >
+            <Cloud className="w-3.5 h-3.5 text-[#C90052]" />
+            <span>
+              {isSupabaseConfigured()
+                ? '☁ Cloud Synced (Phone & PC Connected)'
+                : '☁ Connect Phone to PC / Cloud Sync'}
+            </span>
+          </button>
+        </div>
       </div>
+
+      {/* Cloud Sync Setup Modal */}
+      {showCloudModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-[#E8D2DC] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#F5E6EC] pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-[#FFF1F4] rounded-xl text-[#C90052]">
+                  <Cloud className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#2B1720]">Connect Phone & PC</h3>
+                  <p className="text-[11px] text-[#78636C]">Supabase Cloud Sync</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCloudModal(false)}
+                className="text-[#9E8691] hover:text-[#2B1720] p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#78636C] leading-relaxed">
+              Enter your Supabase project credentials to share your admin account and orders between your laptop, phone, and tablet.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-[#451C2C] mb-1">
+                  Supabase Project URL
+                </label>
+                <input
+                  type="text"
+                  value={cloudUrl}
+                  onChange={e => setCloudUrl(e.target.value)}
+                  placeholder="https://xyzcompany.supabase.co"
+                  className="w-full bg-[#FFF7FA] border border-[#E8D2DC] text-[#2B1720] placeholder-[#A58F9A] text-xs rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:border-[#C90052]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#451C2C] mb-1">
+                  Supabase Anon Key
+                </label>
+                <textarea
+                  rows={2}
+                  value={cloudKey}
+                  onChange={e => setCloudKey(e.target.value)}
+                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  className="w-full bg-[#FFF7FA] border border-[#E8D2DC] text-[#2B1720] placeholder-[#A58F9A] text-xs rounded-xl px-3 py-2 focus-visible:outline-none focus-visible:border-[#C90052] font-mono resize-none"
+                />
+              </div>
+            </div>
+
+            {cloudStatus && (
+              <div
+                className={`p-3 rounded-xl text-xs flex items-start gap-2 font-medium ${
+                  cloudStatus.type === 'success'
+                    ? 'bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534]'
+                    : 'bg-[#FFF1F4] border border-[#FCD2DC] text-[#A81740]'
+                }`}
+              >
+                {cloudStatus.type === 'success' ? (
+                  <Check className="w-4 h-4 shrink-0 mt-0.5 text-[#16A34A]" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#C90052]" />
+                )}
+                <span className="leading-relaxed">{cloudStatus.text}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#F5E6EC]">
+              <button
+                type="button"
+                onClick={() => setShowCloudModal(false)}
+                className="px-3 py-2 text-xs font-bold text-[#78636C] hover:bg-slate-100 rounded-xl"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                disabled={cloudSyncing}
+                onClick={handleCloudSyncNow}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#C90052] hover:bg-[#B5004A] rounded-xl shadow-xs transition-all disabled:opacity-50"
+              >
+                {cloudSyncing ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Cloud className="w-3.5 h-3.5" />
+                )}
+                <span>{cloudSyncing ? 'Connecting...' : 'Connect & Pull Accounts'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { BusinessProfileId, User, Order, RestoOrder, BusinessInfo, DEFAULT_BUSINESS_INFO } from '../types';
 import { db, seedInitialDatabase } from '../db/db';
 import { logActivity } from '../services/auditService';
+import { isSupabaseConfigured } from '../services/supabaseClient';
+import { syncAllCloudData } from '../services/cloudSync';
 
 export type ActiveView =
   | 'dashboard'
@@ -116,6 +118,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             localStorage.setItem('antique_business_info', JSON.stringify({ ...DEFAULT_BUSINESS_INFO, ...parsed }));
           } catch { }
         }
+
+        // Initial sync with cloud if configured
+        if (isSupabaseConfigured() && navigator.onLine) {
+          syncAllCloudData().catch(e => console.warn('Init cloud sync:', e));
+        }
       } catch (err) {
         console.error('Database initialization error:', err);
       } finally {
@@ -124,12 +131,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     init();
 
-    const handleOnline = () => setIsOnline(true);
+    const handleOnline = () => {
+      setIsOnline(true);
+      if (isSupabaseConfigured()) {
+        syncAllCloudData().catch(() => { });
+      }
+    };
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Periodic sync every 30 seconds if configured
+    const syncInterval = setInterval(() => {
+      if (navigator.onLine && isSupabaseConfigured()) {
+        syncAllCloudData().catch(() => { });
+      }
+    }, 30000);
+
     return () => {
+      clearInterval(syncInterval);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
@@ -172,6 +192,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSessionId(sid);
     setIsLoggedIn(true);
     setActiveView('dashboard');
+    if (isSupabaseConfigured() && navigator.onLine) {
+      syncAllCloudData().catch(() => { });
+    }
   };
 
   const logout = async () => {

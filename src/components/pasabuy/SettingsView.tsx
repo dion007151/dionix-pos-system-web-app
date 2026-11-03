@@ -17,8 +17,25 @@ import {
   Eye,
   EyeOff,
   KeyRound,
-  ShieldAlert
+  ShieldAlert,
+  Cloud,
+  RefreshCw,
+  Copy,
+  ExternalLink,
+  Database,
+  X
 } from 'lucide-react';
+import {
+  isSupabaseConfigured,
+  getSavedSupabaseConfig,
+  saveSupabaseConfig,
+  clearSupabaseConfig
+} from '../../services/supabaseClient';
+import {
+  SUPABASE_SCHEMA_SQL,
+  testSupabaseConnection,
+  syncAllCloudData
+} from '../../services/cloudSync';
 
 export const SettingsView: React.FC = () => {
   const { businessInfo, updateBusinessInfo, resetBusinessInfo, addToast, currentUser, logUserAction } = useApp();
@@ -41,6 +58,16 @@ export const SettingsView: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isWiping, setIsWiping] = useState(false);
   const [resetError, setResetError] = useState('');
+
+  // Cloud Sync State
+  const [cloudUrl, setCloudUrl] = useState(() => getSavedSupabaseConfig()?.url || '');
+  const [cloudKey, setCloudKey] = useState(() => getSavedSupabaseConfig()?.anonKey || '');
+  const [isCloudConnected, setIsCloudConnected] = useState(() => isSupabaseConfigured());
+  const [isTestingCloud, setIsTestingCloud] = useState(false);
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+  const [cloudMessage, setCloudMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showSqlModal, setShowSqlModal] = useState(false);
+  const [copiedSql, setCopiedSql] = useState(false);
 
   useEffect(() => {
     setStoreName(businessInfo.storeName);
@@ -192,6 +219,109 @@ export const SettingsView: React.FC = () => {
       }
     };
     reader.readAsText(file);
+  };
+
+  // Cloud Sync Handlers
+  const handleSaveAndConnectCloud = async () => {
+    if (!cloudUrl.trim() || !cloudKey.trim()) {
+      setCloudMessage({ type: 'error', text: 'Please provide both Supabase URL and Anon Key.' });
+      return;
+    }
+    setIsTestingCloud(true);
+    setCloudMessage(null);
+    try {
+      saveSupabaseConfig(cloudUrl.trim(), cloudKey.trim());
+      const test = await testSupabaseConnection();
+      if (!test.success) {
+        setCloudMessage({ type: 'error', text: test.message });
+        setIsCloudConnected(false);
+        return;
+      }
+      setIsCloudConnected(true);
+      setCloudMessage({ type: 'success', text: 'Supabase connected! Syncing data...' });
+
+      const syncRes = await syncAllCloudData();
+      if (syncRes.success) {
+        setCloudMessage({
+          type: 'success',
+          text: `Connected & Synced! (${syncRes.usersSynced} users, ${syncRes.ordersSynced} orders synced).`
+        });
+        addToast('Cloud sync connected and up to date!', 'success');
+      } else {
+        setCloudMessage({ type: 'error', text: syncRes.message || 'Sync failed.' });
+      }
+    } catch (err: any) {
+      setCloudMessage({ type: 'error', text: err.message || 'Connection failed' });
+    } finally {
+      setIsTestingCloud(false);
+    }
+  };
+
+  const handleTestCloudConnection = async () => {
+    if (!cloudUrl.trim() || !cloudKey.trim()) {
+      setCloudMessage({ type: 'error', text: 'Please enter URL and Anon Key first.' });
+      return;
+    }
+    setIsTestingCloud(true);
+    setCloudMessage(null);
+    try {
+      saveSupabaseConfig(cloudUrl.trim(), cloudKey.trim());
+      const test = await testSupabaseConnection();
+      if (test.success) {
+        setIsCloudConnected(true);
+        setCloudMessage({ type: 'success', text: 'Connection successful! Database tables are ready.' });
+        addToast('Connected to Supabase!', 'success');
+      } else {
+        setIsCloudConnected(false);
+        setCloudMessage({ type: 'error', text: test.message });
+      }
+    } catch (err: any) {
+      setCloudMessage({ type: 'error', text: err.message || 'Connection test failed' });
+    } finally {
+      setIsTestingCloud(false);
+    }
+  };
+
+  const handleSyncCloudNow = async () => {
+    if (!isCloudConnected) {
+      setCloudMessage({ type: 'error', text: 'Please connect to Supabase first.' });
+      return;
+    }
+    setIsSyncingCloud(true);
+    setCloudMessage(null);
+    try {
+      const res = await syncAllCloudData();
+      if (res.success) {
+        setCloudMessage({
+          type: 'success',
+          text: `Sync complete! Synced ${res.usersSynced} users and ${res.ordersSynced} orders.`
+        });
+        addToast('Multi-device sync completed successfully!', 'success');
+      } else {
+        setCloudMessage({ type: 'error', text: res.message || 'Sync failed.' });
+      }
+    } catch (err: any) {
+      setCloudMessage({ type: 'error', text: err.message || 'Sync failed.' });
+    } finally {
+      setIsSyncingCloud(false);
+    }
+  };
+
+  const handleDisconnectCloud = () => {
+    if (!confirm('Disconnect Supabase cloud sync? Your local data will remain intact.')) return;
+    clearSupabaseConfig();
+    setIsCloudConnected(false);
+    setCloudUrl('');
+    setCloudKey('');
+    setCloudMessage(null);
+    addToast('Disconnected from Supabase cloud.', 'info');
+  };
+
+  const handleCopySql = () => {
+    navigator.clipboard.writeText(SUPABASE_SCHEMA_SQL);
+    setCopiedSql(true);
+    addToast('SQL Schema copied to clipboard!', 'success');
+    setTimeout(() => setCopiedSql(false), 2000);
   };
 
   return (
@@ -395,6 +525,199 @@ export const SettingsView: React.FC = () => {
         </div>
       </div>
 
+      {/* Cloud Sync Section: Multi-Device Sync (Phone & PC) */}
+      <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-pink-50 rounded-xl text-pink-700">
+              <Cloud className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900">
+                  Multi-Device Cloud Sync (Phone & PC)
+                </h3>
+                <span
+                  className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${isCloudConnected
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-slate-100 text-slate-600'
+                    }`}
+                >
+                  {isCloudConnected ? '● Connected' : '○ Not Connected'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Connect to Supabase to keep all your user accounts, orders, items, and inventory synced in real-time across your laptop, phone, and tablet.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowSqlModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span>Setup Guide & SQL</span>
+            </button>
+            {isCloudConnected && (
+              <button
+                type="button"
+                disabled={isSyncingCloud}
+                onClick={handleSyncCloudNow}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[#C90052] hover:bg-[#B5004A] rounded-xl shadow-xs transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCloud ? 'animate-spin' : ''}`} />
+                <span>{isSyncingCloud ? 'Syncing...' : 'Sync Now'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Input fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Supabase Project URL
+            </label>
+            <input
+              type="text"
+              value={cloudUrl}
+              onChange={e => setCloudUrl(e.target.value)}
+              placeholder="https://your-project-id.supabase.co"
+              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#C90052]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Supabase Anon Public API Key
+            </label>
+            <input
+              type="text"
+              value={cloudKey}
+              onChange={e => setCloudKey(e.target.value)}
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#C90052] font-mono"
+            />
+          </div>
+        </div>
+
+        {cloudMessage && (
+          <div
+            className={`p-3 rounded-xl text-xs flex items-start gap-2 font-medium ${cloudMessage.type === 'success'
+                ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                : 'bg-rose-50 border border-rose-200 text-rose-800'
+              }`}
+          >
+            {cloudMessage.type === 'success' ? (
+              <Check className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+            )}
+            <span className="leading-relaxed">{cloudMessage.text}</span>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div className="text-[11px] text-slate-400">
+            Tip: You can also set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in Vercel Environment Variables so every device auto-connects.
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isCloudConnected && (
+              <button
+                type="button"
+                onClick={handleDisconnectCloud}
+                className="px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+              >
+                Disconnect
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={isTestingCloud}
+              onClick={handleTestCloudConnection}
+              className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {isTestingCloud ? 'Testing...' : 'Test Connection'}
+            </button>
+            <button
+              type="button"
+              disabled={isTestingCloud || isSyncingCloud}
+              onClick={handleSaveAndConnectCloud}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#C90052] hover:bg-[#B5004A] rounded-xl shadow-xs transition-all disabled:opacity-50"
+            >
+              <Cloud className="w-3.5 h-3.5" />
+              <span>{isTestingCloud ? 'Connecting...' : 'Save & Connect Cloud'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* SQL Setup Modal */}
+      {showSqlModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-6 border border-slate-200 space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-pink-50 rounded-xl text-pink-700">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">1-Minute Supabase Setup</h3>
+                  <p className="text-[11px] text-slate-500">Run this once in your Supabase project</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSqlModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-600 leading-relaxed overflow-y-auto flex-1 pr-1">
+              <ol className="list-decimal list-inside space-y-1.5 font-medium text-slate-700">
+                <li>Create a free account at <a href="https://supabase.com" target="_blank" rel="noreferrer" className="text-pink-700 underline inline-flex items-center gap-0.5">supabase.com <ExternalLink className="w-3 h-3" /></a> and click <strong>New Project</strong>.</li>
+                <li>Go to the <strong>SQL Editor</strong> tab on the left sidebar.</li>
+                <li>Paste the script below and click <strong>Run</strong> (creates <code>pos_users</code>, <code>pos_orders</code>, <code>pos_products</code>, <code>pos_customers</code>).</li>
+                <li>Go to <strong>Project Settings → API</strong>, copy the <strong>Project URL</strong> and <strong>anon public API key</strong>, and paste them here!</li>
+              </ol>
+
+              <div className="relative pt-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">SQL Schema Script</span>
+                  <button
+                    type="button"
+                    onClick={handleCopySql}
+                    className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-pink-700 bg-pink-50 hover:bg-pink-100 rounded-lg transition-colors"
+                  >
+                    {copiedSql ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedSql ? 'Copied to Clipboard!' : 'Copy SQL Script'}</span>
+                  </button>
+                </div>
+                <pre className="p-3 bg-slate-900 text-slate-100 rounded-xl text-[11px] font-mono overflow-x-auto max-h-56 leading-relaxed border border-slate-800">
+                  {SUPABASE_SCHEMA_SQL}
+                </pre>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowSqlModal(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stores Directory Management */}
       <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs space-y-4">
         <div>
@@ -467,127 +790,127 @@ export const SettingsView: React.FC = () => {
         </div>
       </div>
 
-  {/* Danger Zone: Delete All Data From Scratch (Admin Only) */ }
-  {
-    isAdmin && (
-      <div className="p-5 bg-rose-50/50 border border-rose-200 rounded-2xl shadow-xs space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 bg-rose-100 rounded-xl text-rose-700 shrink-0">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-rose-950">
-                  Delete All Data (From Scratch)
-                </h3>
-                <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-rose-200 text-rose-900 rounded-md">
-                  Admin Only
-                </span>
+      {/* Danger Zone: Delete All Data From Scratch (Admin Only) */}
+      {
+        isAdmin && (
+          <div className="p-5 bg-rose-50/50 border border-rose-200 rounded-2xl shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 bg-rose-100 rounded-xl text-rose-700 shrink-0">
+                  <ShieldAlert className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-rose-950">
+                      Delete All Data (From Scratch)
+                    </h3>
+                    <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-rose-200 text-rose-900 rounded-md">
+                      Admin Only
+                    </span>
+                  </div>
+                  <p className="text-xs text-rose-700/90 mt-1 leading-relaxed">
+                    Permanently delete all orders, items, payments, customers, products, stock movements, and expenses. Your administrator login account will be preserved for security.
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-rose-700/90 mt-1 leading-relaxed">
-                Permanently delete all orders, items, payments, customers, products, stock movements, and expenses. Your administrator login account will be preserved for security.
-              </p>
-            </div>
-          </div>
 
-          <button
-            type="button"
-            onClick={handleOpenResetModal}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:scale-95 rounded-xl shadow-xs transition-all shrink-0"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>Delete Everything from Scratch...</span>
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  {/* Admin Password Confirmation Modal */ }
-  {
-    showResetModal && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-slate-200 space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 bg-rose-100 rounded-xl text-rose-600 shrink-0">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 id="reset-modal-title" className="text-base font-bold text-slate-900">
-                Delete All Data from Scratch?
-              </h3>
-              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                This will <strong className="text-rose-600">permanently delete</strong> all orders, customers, inventory records, and expenses. This action cannot be undone.
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={handleConfirmReset} className="space-y-4 pt-1">
-            <div>
-              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
-                <KeyRound className="w-3.5 h-3.5 text-slate-500" />
-                <span>Enter Admin Password to Authorize</span>
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  autoFocus
-                  required
-                  value={adminPasswordInput}
-                  onChange={e => {
-                    setAdminPasswordInput(e.target.value);
-                    if (resetError) setResetError('');
-                  }}
-                  placeholder="Enter your administrator password"
-                  className="w-full pl-3 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-700"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {resetError && (
-                <p className="text-xs font-semibold text-rose-600 mt-1.5 flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>{resetError}</span>
-                </p>
-              )}
-            </div>
-
-            <div className="flex gap-2.5 pt-2">
               <button
                 type="button"
-                disabled={isWiping}
-                onClick={() => setShowResetModal(false)}
-                className="flex-1 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+                onClick={handleOpenResetModal}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:scale-95 rounded-xl shadow-xs transition-all shrink-0"
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isWiping || !adminPasswordInput.trim()}
-                className="flex-1 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
-              >
-                {isWiping ? (
-                  <span>Deleting Data...</span>
-                ) : (
-                  <>
-                    <Trash2 className="w-4 h-4" />
-                    <span>Confirm &amp; Delete All</span>
-                  </>
-                )}
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Everything from Scratch...</span>
               </button>
             </div>
-          </form>
-        </div>
-      </div>
-    )
-  }
+          </div>
+        )
+      }
+
+      {/* Admin Password Confirmation Modal */}
+      {
+        showResetModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title">
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-slate-200 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 bg-rose-100 rounded-xl text-rose-600 shrink-0">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 id="reset-modal-title" className="text-base font-bold text-slate-900">
+                    Delete All Data from Scratch?
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    This will <strong className="text-rose-600">permanently delete</strong> all orders, customers, inventory records, and expenses. This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleConfirmReset} className="space-y-4 pt-1">
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Enter Admin Password to Authorize</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      autoFocus
+                      required
+                      value={adminPasswordInput}
+                      onChange={e => {
+                        setAdminPasswordInput(e.target.value);
+                        if (resetError) setResetError('');
+                      }}
+                      placeholder="Enter your administrator password"
+                      className="w-full pl-3 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-700"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {resetError && (
+                    <p className="text-xs font-semibold text-rose-600 mt-1.5 flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      <span>{resetError}</span>
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    disabled={isWiping}
+                    onClick={() => setShowResetModal(false)}
+                    className="flex-1 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isWiping || !adminPasswordInput.trim()}
+                    className="flex-1 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+                  >
+                    {isWiping ? (
+                      <span>Deleting Data...</span>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        <span>Confirm &amp; Delete All</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )
+      }
     </div >
   );
 };
