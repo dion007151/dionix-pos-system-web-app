@@ -662,30 +662,36 @@ export const ReportsView: React.FC = () => {
 
   return (
     <div className="financial-report-page space-y-6">
-      {/* Executive Command Header */}
-      <div className="relative rounded-2xl bg-gradient-to-r from-[#2B0D18] via-[#451323] to-[#5A1430] p-6 text-white shadow-lg print:hidden">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      {/* Hero Header in Rich Burgundy to Antique Pasabuy Pink Gradient */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#451323] via-[#7B113A] to-[#C90052] p-6 text-white shadow-xl print:hidden">
+        {/* Subtle decorative circles for depth */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
+          <div className="absolute -right-10 -top-20 h-64 w-64 rounded-full border-[30px] border-white/5" />
+          <div className="absolute right-28 -bottom-24 h-48 w-48 rounded-full bg-pink-500/15 blur-2xl" />
+        </div>
+
+        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-md bg-white/10 px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase text-pink-200">
-              <Building2 className="h-3 w-3" /> Financial Operations
+            <div className="mb-2.5 inline-flex items-center gap-2 rounded-full border border-pink-300/30 bg-white/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-pink-100 backdrop-blur-xs">
+              <BarChart3 className="h-3.5 w-3.5 text-pink-200" /> Business Overview
             </div>
-            <h1 className="mt-2 text-2xl font-black tracking-tight text-white">Financial Performance Statement</h1>
-            <p className="mt-0.5 text-xs text-pink-100/70">
-              Audit-ready income statement, revenue margins, and real-time cash reconciliation.
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Financial Reports</h1>
+            <p className="mt-1 text-xs sm:text-sm text-pink-100/90 font-medium max-w-xl">
+              A clear view of your sales, costs, collections, and profit.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             {/* Period Filter Pill Switcher */}
-            <div className="inline-flex rounded-xl bg-black/25 p-1 text-xs font-semibold backdrop-blur-xs">
+            <div className="inline-flex rounded-2xl bg-black/25 p-1 text-xs font-semibold backdrop-blur-md border border-white/10">
               {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY', 'CUSTOM'] as Period[]).map(val => (
                 <button
                   key={val}
                   onClick={() => { setPeriod(val); setPage(1); }}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                  className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
                     period === val
-                      ? 'bg-white text-[#451323] shadow-xs'
-                      : 'text-pink-100/80 hover:text-white hover:bg-white/10'
+                      ? 'bg-white text-[#C90052] shadow-sm'
+                      : 'text-pink-100/85 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   {val.charAt(0) + val.slice(1).toLowerCase()}
@@ -695,7 +701,7 @@ export const ReportsView: React.FC = () => {
 
             {/* Custom Range Selector */}
             {period === 'CUSTOM' && (
-              <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 text-xs text-slate-800 shadow-xs">
+              <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 text-xs text-slate-800 shadow-md">
                 <input
                   type="date"
                   value={customFrom}
@@ -718,10 +724,10 @@ export const ReportsView: React.FC = () => {
                 type="button"
                 onClick={() => setExportOpen(v => !v)}
                 disabled={isExportingPdf}
-                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-[#451323] shadow-sm hover:bg-slate-50 active:scale-98 transition disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-[#451323] shadow-md hover:bg-pink-50 active:scale-98 transition disabled:opacity-50"
               >
-                <Download className={`h-3.5 w-3.5 text-[#C90052] ${isExportingPdf ? 'animate-spin' : ''}`} />
-                <span>{isExportingPdf ? 'Generating...' : 'Export Statement'}</span>
+                <Download className={`h-4 w-4 text-[#C90052] ${isExportingPdf ? 'animate-bounce' : ''}`} />
+                <span>{isExportingPdf ? 'Generating PDF...' : 'Export Report'}</span>
                 <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -813,61 +819,67 @@ export const ReportsView: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* Executive FinTech Metric Cards (Clean, high-contrast, no AI slop) */}
+          {/* Vibrant Antique Pasabuy Branded Metric Cards */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 print:hidden">
             <MetricCard
-              label="Gross Sales"
+              label="Total Sales"
               value={currentTotals.sales}
               previous={previousTotals.sales}
-              icon={<ShoppingBag className="h-4 w-4 text-slate-600" />}
-              hint="Gross merchandise revenue"
+              icon={<ShoppingBag className="h-4 w-4" />}
+              accent="pink"
+              hint="Order totals in this period"
             />
             <MetricCard
-              label="Cost of Goods (COGS)"
+              label="Cost of Goods Sold"
               value={currentTotals.cogs}
               previous={previousTotals.cogs}
-              icon={<Receipt className="h-4 w-4 text-slate-600" />}
-              hint="Direct item purchasing cost"
+              icon={<Receipt className="h-4 w-4" />}
+              accent="amber"
+              hint="Purchased item costs"
             />
             <MetricCard
-              label="Gross Operating Profit"
+              label="Gross Profit"
               value={currentTotals.grossProfit}
               previous={previousTotals.grossProfit}
-              icon={<TrendingUp className="h-4 w-4 text-slate-600" />}
-              hint="Sales revenue less COGS"
+              icon={<TrendingUp className="h-4 w-4" />}
+              accent="emerald"
+              hint="Sales minus item costs"
             />
             <MetricCard
-              label="Net Operating Income"
+              label="Net Profit"
               value={currentTotals.netProfit}
               previous={previousTotals.netProfit}
-              icon={<DollarSign className="h-4 w-4 text-slate-600" />}
-              hint="After operational expenses"
-              highlight
+              icon={<DollarSign className="h-4 w-4" />}
+              accent={currentTotals.netProfit < 0 ? 'rose' : 'pink'}
+              hint="Gross profit minus expenses"
             />
           </div>
 
           {/* Secondary Financial Indicators */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 print:hidden">
             <MetricCard
-              label="Operating Expenses"
+              label="Total Expenses"
               value={currentTotals.expenses}
               previous={previousTotals.expenses}
-              icon={<Wallet className="h-4 w-4 text-slate-600" />}
-              hint="Logged operational costs"
+              icon={<Wallet className="h-4 w-4" />}
+              accent="rose"
+              hint="Recorded operating expenses"
               isExpense
             />
             <MetricCard
-              label="Cash Collections"
+              label="Collected Payments"
               value={currentTotals.collected}
               previous={previousTotals.collected}
-              icon={<CreditCard className="h-4 w-4 text-slate-600" />}
-              hint="Payments received in period"
+              icon={<CreditCard className="h-4 w-4" />}
+              accent="blue"
+              hint="Payment records received in period"
             />
             <MetricCard
-              label="Accounts Receivable"
+              label="Outstanding Payments"
               value={currentTotals.outstanding}
               previous={previousTotals.outstanding}
-              icon={<Receipt className="h-4 w-4 text-slate-600" />}
+              icon={<Building2 className="h-4 w-4" />}
+              accent="orange"
               hint="Uncollected customer balances"
             />
           </div>
@@ -969,7 +981,7 @@ export const ReportsView: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/75 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  <tr className="border-b border-pink-100 bg-pink-50/60 text-[10px] font-bold uppercase tracking-wider text-[#881337]">
                     <th className="px-4 py-2.5">Timestamp</th>
                     <th className="px-4 py-2.5">Reference ID</th>
                     <th className="px-4 py-2.5 text-center">Type</th>
@@ -998,7 +1010,7 @@ export const ReportsView: React.FC = () => {
                         </td>
                         <td className="px-4 py-2.5 text-center">
                           <span className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase ${
-                            row.type === 'ORDER' ? 'bg-slate-100 text-slate-800' :
+                            row.type === 'ORDER' ? 'bg-pink-50 text-[#C90052] border border-pink-200 font-bold' :
                             row.type === 'PAYMENT' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
                             'bg-amber-50 text-amber-800 border border-amber-200'
                           }`}>
@@ -1091,7 +1103,7 @@ function MetricCard({
   previous,
   icon,
   hint,
-  highlight = false,
+  accent = 'pink',
   isExpense = false
 }: {
   label: string;
@@ -1099,30 +1111,67 @@ function MetricCard({
   previous: number;
   icon: React.ReactNode;
   hint: string;
-  highlight?: boolean;
+  accent?: 'pink' | 'amber' | 'emerald' | 'rose' | 'blue' | 'orange';
   isExpense?: boolean;
 }) {
+  const styles: Record<string, { icon: string; stripe: string; wash: string; text: string }> = {
+    pink: {
+      icon: 'border-pink-200 bg-pink-50 text-[#C90052]',
+      stripe: '#C90052',
+      wash: 'bg-pink-50/30 hover:border-pink-300 hover:shadow-pink-100/50',
+      text: 'text-[#C90052]'
+    },
+    amber: {
+      icon: 'border-amber-200 bg-amber-50 text-amber-700',
+      stripe: '#F59E0B',
+      wash: 'bg-amber-50/25 hover:border-amber-300 hover:shadow-amber-100/50',
+      text: 'text-amber-800'
+    },
+    emerald: {
+      icon: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      stripe: '#10B981',
+      wash: 'bg-emerald-50/25 hover:border-emerald-300 hover:shadow-emerald-100/50',
+      text: 'text-emerald-800'
+    },
+    rose: {
+      icon: 'border-rose-200 bg-rose-50 text-rose-700',
+      stripe: '#F43F5E',
+      wash: 'bg-rose-50/25 hover:border-rose-300 hover:shadow-rose-100/50',
+      text: 'text-rose-700'
+    },
+    blue: {
+      icon: 'border-blue-200 bg-blue-50 text-blue-700',
+      stripe: '#3B82F6',
+      wash: 'bg-blue-50/25 hover:border-blue-300 hover:shadow-blue-100/50',
+      text: 'text-blue-800'
+    },
+    orange: {
+      icon: 'border-orange-200 bg-orange-50 text-orange-700',
+      stripe: '#F97316',
+      wash: 'bg-orange-50/25 hover:border-orange-300 hover:shadow-orange-100/50',
+      text: 'text-orange-800'
+    }
+  };
+
+  const style = styles[accent] || styles.pink;
   const delta = value - previous;
   const isPositive = isExpense ? delta <= 0 : delta >= 0;
 
   return (
-    <div className={`rounded-xl border p-4 transition-all ${
-      highlight
-        ? 'border-[#0F172A] bg-white shadow-xs'
-        : 'border-slate-200 bg-white hover:border-slate-300'
-    }`}>
-      <div className="flex items-center justify-between text-slate-500">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
-        <div className="rounded-md bg-slate-50 p-1.5">{icon}</div>
+    <div className={`group relative overflow-hidden rounded-2xl border border-slate-200/90 ${style.wash} bg-white p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}>
+      <div style={{ backgroundColor: style.stripe }} className="absolute inset-x-0 top-0 h-1.5" />
+      <div className="flex items-center justify-between">
+        <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">{label}</span>
+        <span className={`rounded-xl border p-2 transition-transform duration-200 group-hover:scale-105 ${style.icon}`}>
+          {icon}
+        </span>
       </div>
 
-      <div className={`mt-2 font-mono text-2xl font-black tracking-tight ${
-        highlight && value < 0 ? 'text-rose-600' : 'text-slate-900'
-      }`}>
+      <div className="mt-2.5 font-mono text-2xl font-black tracking-tight text-slate-900">
         {peso(value)}
       </div>
 
-      <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[10px]">
+      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-[10px]">
         <span className="text-slate-400">{hint}</span>
         <span className={`inline-flex items-center font-mono font-bold ${
           isPositive ? 'text-emerald-700' : 'text-rose-600'
