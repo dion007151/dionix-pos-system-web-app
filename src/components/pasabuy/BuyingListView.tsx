@@ -162,6 +162,18 @@ export const BuyingListView: React.FC = () => {
     return () => { isCurrentUser = false; };
   }, [printSettingsKey]);
 
+  useEffect(() => {
+    const onBeforePrint = () => document.body.classList.add('printing-buying-list');
+    const onAfterPrint = () => document.body.classList.remove('printing-buying-list');
+    window.addEventListener('beforeprint', onBeforePrint);
+    window.addEventListener('afterprint', onAfterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', onBeforePrint);
+      window.removeEventListener('afterprint', onAfterPrint);
+      document.body.classList.remove('printing-buying-list');
+    };
+  }, []);
+
   // Filter items
   const cancelledOrderIds = new Set((orders || []).filter(o => o.status === 'CANCELLED').map(o => o.id));
   const archivedOrderIds = new Set((orders || []).filter(order => order.isArchived).map(order => order.id));
@@ -230,7 +242,22 @@ export const BuyingListView: React.FC = () => {
       [section]: { ...current[section], [key]: checked }
     }));
   };
+  const handlePrint = () => {
+    document.body.classList.add('printing-buying-list');
+    window.print();
+    setTimeout(() => {
+      document.body.classList.remove('printing-buying-list');
+    }, 1500);
+  };
+
   const handleDownloadPdf = async () => {
+    // Target the visible rendered preview inside the open settings modal
+    const target = document.querySelector('.buying-print-preview') as HTMLElement;
+    if (!target) {
+      addToast('Please keep print settings open to download PDF', 'error');
+      return;
+    }
+
     setIsExportingPdf(true);
     addToast('Generating PDF file, please wait...', 'info');
 
@@ -244,14 +271,15 @@ export const BuyingListView: React.FC = () => {
             : 'a4';
 
       const opt = {
-        margin: [8, 8, 8, 8],
+        margin: [4, 4, 4, 4],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
           useCORS: true,
           logging: false,
-          allowTaint: true,
+          scrollY: 0,
+          scrollX: 0
         },
         jsPDF: {
           unit: 'mm',
@@ -260,41 +288,13 @@ export const BuyingListView: React.FC = () => {
         }
       };
 
-      // Clone the hidden print element and make it temporarily visible
-      const hidden = document.getElementById('printable-buying-list');
-      if (!hidden) {
-        addToast('Document content not ready. Please try again.', 'error');
-        setIsExportingPdf(false);
-        return;
-      }
-
-      const clone = hidden.cloneNode(true) as HTMLElement;
-      clone.style.position = 'fixed';
-      clone.style.top = '-9999px';
-      clone.style.left = '-9999px';
-      clone.style.display = 'block';
-      clone.style.visibility = 'visible';
-      clone.style.zIndex = '-1';
-      clone.style.width = printSettings.orientation.toLowerCase() === 'landscape' ? '297mm' : '210mm';
-      clone.style.background = '#ffffff';
-      clone.style.color = '#000000';
-      clone.style.padding = '12px';
-      clone.style.fontFamily = 'Arial, sans-serif';
-      clone.style.fontSize = '11px';
-      document.body.appendChild(clone);
-
-      // Small delay so browser renders the clone
-      await new Promise(resolve => setTimeout(resolve, 300));
-
       const html2pdfModule = (await import('html2pdf.js')).default || (await import('html2pdf.js'));
-      await html2pdfModule().set(opt).from(clone).save();
-
-      document.body.removeChild(clone);
+      await html2pdfModule().set(opt).from(target).save();
       addToast('Buying list PDF downloaded successfully!', 'success');
     } catch (err: any) {
       console.error('PDF export error:', err);
-      addToast('PDF export failed. Opening print dialog instead...', 'info');
-      window.print();
+      addToast('Direct PDF export encountered an issue. Opening Print dialog...', 'info');
+      handlePrint();
     } finally {
       setIsExportingPdf(false);
     }
@@ -772,7 +772,7 @@ export const BuyingListView: React.FC = () => {
       {createPortal(renderPrintDocument(false), document.body)}
 
       {printSettingsOpen && createPortal(
-        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-3" onClick={() => setPrintSettingsOpen(false)}>
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-3 print:hidden print-modal-backdrop" onClick={() => setPrintSettingsOpen(false)}>
           <section role="dialog" aria-modal="true" aria-labelledby="buying-print-settings-title" className="flex max-h-[96vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-t-3xl bg-slate-100 shadow-2xl sm:rounded-3xl" onClick={event => event.stopPropagation()}>
             <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
               <div><h2 id="buying-print-settings-title" className="flex items-center gap-2 text-base font-black text-slate-900"><Settings2 className="h-4 w-4 text-[#C90052]" />Customize Buying List Printout</h2><p className="mt-0.5 text-[11px] text-slate-500">Changes update the preview immediately. Settings are saved separately for each user.</p></div>
@@ -856,7 +856,7 @@ export const BuyingListView: React.FC = () => {
                   <Download className={`h-3.5 w-3.5 ${isExportingPdf ? 'animate-bounce' : ''}`} />
                   <span>{isExportingPdf ? 'Generating PDF...' : 'Download PDF'}</span>
                 </button>
-                <button type="button" onClick={() => window.print()} className="flex items-center gap-1.5 rounded-lg bg-[#C90052] px-4 py-2 text-[11px] font-bold text-white hover:bg-[#E60063]"><Printer className="h-3.5 w-3.5" />Print</button>
+                <button type="button" onClick={handlePrint} className="flex items-center gap-1.5 rounded-lg bg-[#C90052] px-4 py-2 text-[11px] font-bold text-white hover:bg-[#E60063]"><Printer className="h-3.5 w-3.5" />Print</button>
               </div>
             </footer>
           </section>
