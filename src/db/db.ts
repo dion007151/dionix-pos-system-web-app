@@ -1,6 +1,7 @@
 import Dexie, { Table } from 'dexie';
 import {
   User,
+  AuditLog,
   Customer,
   Store,
   Order,
@@ -35,6 +36,7 @@ export class PosDatabase extends Dexie {
   rateTiers!: Table<PasabuyRateTier, number>;
   settings!: Table<SettingItem, string>;
   stockMovements!: Table<StockMovement, string>;
+  auditLogs!: Table<AuditLog, string>;
 
   // Restaurant Mode Tables
   restoTables!: Table<RestoTable, string>;
@@ -63,6 +65,45 @@ export class PosDatabase extends Dexie {
       restoInventory: 'id, itemCode, name, category',
       restoStaff: 'id, staffCode, fullName, role, isActive'
     });
+    this.version(3).stores({
+      users: 'id, username, role, isActive',
+      customers: 'id, code, name, phone, isActive, createdAt',
+      stores: 'id, name, category',
+      orders: 'id, orderNo, customerId, status, deliveryType, createdAt, updatedAt, isArchived, archivedAt',
+      orderItems: 'id, orderId, productName, status, feeType',
+      payments: 'id, orderId, paymentDate, method',
+      products: 'id, name, category, store, barcode, isStockItem',
+      expenses: 'id, description, category, expenseDate, createdAt',
+      rateTiers: '++id, minAmount',
+      settings: 'key',
+      stockMovements: 'id, productId, timestamp',
+      restoTables: 'id, tableNumber, section, status',
+      restoMenuItems: 'id, code, name, category, isAvailable',
+      restoOrders: 'id, orderNo, tableId, orderType, status, isPaid, createdAt',
+      restoInventory: 'id, itemCode, name, category',
+      restoStaff: 'id, staffCode, fullName, role, isActive'
+    }).upgrade(async transaction => {
+      await transaction.table('orders').toCollection().modify(order => { order.isArchived = false; });
+    });
+    this.version(4).stores({
+      users: 'id, username, role, isActive',
+      customers: 'id, code, name, phone, isActive, createdAt',
+      stores: 'id, name, category',
+      orders: 'id, orderNo, customerId, status, deliveryType, createdAt, updatedAt, isArchived, archivedAt',
+      orderItems: 'id, orderId, productName, status, feeType',
+      payments: 'id, orderId, paymentDate, method',
+      products: 'id, name, category, store, barcode, isStockItem',
+      expenses: 'id, description, category, expenseDate, createdAt',
+      rateTiers: '++id, minAmount',
+      settings: 'key',
+      stockMovements: 'id, productId, timestamp',
+      auditLogs: 'id, userId, username, role, action, timestamp, sessionId',
+      restoTables: 'id, tableNumber, section, status',
+      restoMenuItems: 'id, code, name, category, isAvailable',
+      restoOrders: 'id, orderNo, tableId, orderType, status, isPaid, createdAt',
+      restoInventory: 'id, itemCode, name, category',
+      restoStaff: 'id, staffCode, fullName, role, isActive'
+    });
   }
 }
 
@@ -72,20 +113,30 @@ export const db = new PosDatabase();
  * Initializes database with default data if empty
  */
 export async function seedInitialDatabase() {
+  // Clean up any legacy pre-seeded default demo accounts so users create their own accounts
+  try {
+    const demoAdmin = await db.users.get('usr-1');
+    if (demoAdmin && demoAdmin.username === 'admin') {
+      await db.users.delete('usr-1');
+    }
+    const demoStaff = await db.users.get('usr-2');
+    if (demoStaff && demoStaff.username === 'cashier') {
+      await db.users.delete('usr-2');
+    }
+    const demoRider = await db.users.get('usr-3');
+    if (demoRider && demoRider.username === 'rider') {
+      await db.users.delete('usr-3');
+    }
+  } catch (err) {
+    console.warn('User cleanup check:', err);
+  }
+
   const seeded = await db.settings.get('has_seeded_initial_data');
   if (seeded && seeded.value === 'true') {
     return;
   }
 
-  // 1. Users
-  const userCount = await db.users.count();
-  if (userCount === 0) {
-    await db.users.bulkAdd([
-      { id: 'usr-1', username: 'admin', fullName: 'Administrator', role: 'Admin', isActive: true },
-      { id: 'usr-2', username: 'cashier', fullName: 'Maria Santos (Staff)', role: 'Staff', isActive: true },
-      { id: 'usr-3', username: 'rider', fullName: 'John Doe (Rider/Shopper)', role: 'Shopper', isActive: true }
-    ]);
-  }
+  // 1. Users - No hardcoded default accounts; users create their own Admin/Staff accounts on the login screen.
 
   // 2. Settings & Tiers
   await db.settings.put({ key: 'business_name', value: 'DIONIX POS' });
@@ -279,6 +330,7 @@ export async function exportDatabaseToJson(): Promise<string> {
     rateTiers: await db.rateTiers.toArray(),
     settings: await db.settings.toArray(),
     stockMovements: await db.stockMovements.toArray(),
+    auditLogs: await db.auditLogs.toArray(),
     restoTables: await db.restoTables.toArray(),
     restoMenuItems: await db.restoMenuItems.toArray(),
     restoOrders: await db.restoOrders.toArray(),
@@ -311,6 +363,7 @@ export async function importDatabaseFromJson(jsonString: string): Promise<boolea
       db.rateTiers,
       db.settings,
       db.stockMovements,
+      db.auditLogs,
       db.restoTables,
       db.restoMenuItems,
       db.restoOrders,
@@ -361,6 +414,10 @@ export async function importDatabaseFromJson(jsonString: string): Promise<boolea
         await db.stockMovements.clear();
         await db.stockMovements.bulkAdd(data.stockMovements);
       }
+      if (Array.isArray(data.auditLogs)) {
+        await db.auditLogs.clear();
+        await db.auditLogs.bulkAdd(data.auditLogs);
+      }
       if (Array.isArray(data.restoTables)) {
         await db.restoTables.clear();
         await db.restoTables.bulkAdd(data.restoTables);
@@ -391,85 +448,126 @@ export async function importDatabaseFromJson(jsonString: string): Promise<boolea
 }
 
 /**
+ * Wipes all application data from scratch while preserving the authenticated admin account.
+ */
+export async function resetSystemToScratch(currentAdminId?: string): Promise<void> {
+  await db.transaction('rw', [
+    db.users,
+    db.customers,
+    db.stores,
+    db.orders,
+    db.orderItems,
+    db.payments,
+    db.products,
+    db.expenses,
+    db.stockMovements,
+    db.auditLogs,
+    db.restoTables,
+    db.restoMenuItems,
+    db.restoOrders,
+    db.restoInventory,
+    db.restoStaff
+  ], async () => {
+    // Preserve current admin account
+    let adminToKeep: User | undefined;
+    if (currentAdminId) {
+      adminToKeep = await db.users.get(currentAdminId);
+    }
+    if (!adminToKeep) {
+      const admins = await db.users.filter(u => u.role === 'Admin').toArray();
+      adminToKeep = admins[0];
+    }
+
+    await db.users.clear();
+    if (adminToKeep) {
+      await db.users.put(adminToKeep);
+    }
+
+    // Wipe all transactional, catalog, and inventory data
+    await db.customers.clear();
+    await db.stores.clear();
+    await db.orders.clear();
+    await db.orderItems.clear();
+    await db.payments.clear();
+    await db.products.clear();
+    await db.expenses.clear();
+    await db.stockMovements.clear();
+    await db.auditLogs.clear();
+    await db.restoTables.clear();
+    await db.restoMenuItems.clear();
+    await db.restoOrders.clear();
+    await db.restoInventory.clear();
+    await db.restoStaff.clear();
+  });
+}
+
+/**
  * Inventory Helpers for Antique Pasabuy
  */
-export async function addStock(productId: string, qty: number, note: string = 'Added stock') {
+export async function addStock(productId: string, qty: number, note: string = 'Added stock', details: { supplier?: string; unitCost?: number; receivedDate?: string; reference?: string } = {}) {
   if (qty <= 0) throw new Error('Quantity to add must be greater than zero');
-  const product = await db.products.get(productId);
-  if (!product) throw new Error('Product not found');
-
-  const newQty = (product.stockQuantity || 0) + qty;
-  const newAdditional = (product.additionalStocks || 0) + qty;
-
-  await db.products.update(productId, {
-    isStockItem: true,
-    stockQuantity: newQty,
-    additionalStocks: newAdditional
+  return db.transaction('rw', db.products, db.stockMovements, async () => {
+    const product = await db.products.get(productId);
+    if (!product) throw new Error('Product not found');
+    if (details.reference && await db.stockMovements.filter(m => m.reference === details.reference).first()) {
+      throw new Error('This stock receipt was already saved');
+    }
+    const newQty = (product.stockQuantity || 0) + qty;
+    await db.products.update(productId, {
+      isStockItem: true,
+      stockQuantity: newQty,
+      additionalStocks: (product.additionalStocks || 0) + qty,
+      ...(details.unitCost !== undefined ? { costPrice: details.unitCost } : {})
+    });
+    await db.stockMovements.add({
+      id: 'sm-' + Math.random().toString(36).substring(2, 9), productId, productName: product.name,
+      timestamp: new Date().toISOString(), changeQty: qty, newQuantity: newQty, note,
+      movementType: 'STOCK_IN', supplier: details.supplier, unitCost: details.unitCost,
+      receivedDate: details.receivedDate, reference: details.reference
+    });
+    return newQty;
   });
-
-  await db.stockMovements.add({
-    id: 'sm-' + Math.random().toString(36).substring(2, 9),
-    productId,
-    productName: product.name,
-    timestamp: new Date().toISOString(),
-    changeQty: qty,
-    newQuantity: newQty,
-    note
-  });
-
-  return newQty;
 }
 
 export async function adjustStock(productId: string, newQty: number, note: string) {
   if (newQty < 0) throw new Error('Stock quantity cannot be negative');
   if (!note || !note.trim()) throw new Error('A reason note is required for adjustments');
-  const product = await db.products.get(productId);
-  if (!product) throw new Error('Product not found');
-
-  const oldQty = product.stockQuantity || 0;
-  const diff = newQty - oldQty;
-
-  await db.products.update(productId, {
-    isStockItem: true,
-    stockQuantity: newQty
+  return db.transaction('rw', db.products, db.stockMovements, async () => {
+    const product = await db.products.get(productId);
+    if (!product) throw new Error('Product not found');
+    const oldQty = product.stockQuantity || 0;
+    const diff = newQty - oldQty;
+    if (diff === 0) return newQty;
+    await db.products.update(productId, { isStockItem: true, stockQuantity: newQty });
+    await db.stockMovements.add({
+      id: 'sm-' + Math.random().toString(36).substring(2, 9), productId, productName: product.name,
+      timestamp: new Date().toISOString(), changeQty: diff, newQuantity: newQty,
+      note: note.trim(), movementType: 'ADJUSTMENT'
+    });
+    return newQty;
   });
-
-  await db.stockMovements.add({
-    id: 'sm-' + Math.random().toString(36).substring(2, 9),
-    productId,
-    productName: product.name,
-    timestamp: new Date().toISOString(),
-    changeQty: diff,
-    newQuantity: newQty,
-    note: note.trim()
-  });
-
-  return newQty;
 }
 
-export async function recordSaleFromStock(productName: string, qty: number, orderId?: string, orderNo?: string) {
+export async function recordSaleFromStock(productName: string, qty: number, orderId?: string, orderNo?: string, productId?: string, itemId?: string) {
   if (!productName || qty <= 0) return false;
-  const products = await db.products.toArray();
-  const product = products.find(
-    p => p.name.trim().toLowerCase() === productName.trim().toLowerCase() && p.isStockItem
-  );
-  if (!product) return false;
-
-  const newQty = Math.max(0, (product.stockQuantity || 0) - qty);
-  await db.products.update(product.id, {
-    stockQuantity: newQty
+  return db.transaction('rw', db.products, db.stockMovements, async () => {
+    const ref = orderId && itemId ? `SALE-${orderId}-${itemId}` : undefined;
+    if (ref && await db.stockMovements.filter(m => m.reference === ref).first()) return true;
+    const products = await db.products.toArray();
+    const exact = productId ? products.find(p => p.id === productId) : undefined;
+    const named = products.filter(p => p.name.trim().toLowerCase() === productName.trim().toLowerCase() && p.isStockItem);
+    const product = (exact?.isStockItem ? exact : undefined) || (named.length === 1 ? named[0] : undefined);
+    if (!product) return false;
+    const oldQty = product.stockQuantity || 0;
+    if (oldQty < qty) throw new Error(`Insufficient stock for ${product.name}. Available: ${oldQty}`);
+    const newQty = oldQty - qty;
+    await db.products.update(product.id, { stockQuantity: newQty });
+    await db.stockMovements.add({
+      id: 'sm-' + Math.random().toString(36).substring(2, 9), productId: product.id,
+      productName: product.name, timestamp: new Date().toISOString(), changeQty: -qty,
+      newQuantity: newQty, note: orderNo ? `Fulfilled from Stock: ${orderNo}` : 'Fulfilled from Stock',
+      orderId, reference: ref || orderNo, movementType: 'STOCK_OUT'
+    });
+    return true;
   });
-
-  await db.stockMovements.add({
-    id: 'sm-' + Math.random().toString(36).substring(2, 9),
-    productId: product.id,
-    productName: product.name,
-    timestamp: new Date().toISOString(),
-    changeQty: -qty,
-    newQuantity: newQty,
-    note: orderNo ? `Fulfilled from Stock: ${orderNo}` : 'Fulfilled from Stock',
-    orderId
-  });
-
-  return true;
 }

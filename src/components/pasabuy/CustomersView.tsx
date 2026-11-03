@@ -104,7 +104,7 @@ export const CustomersView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Users className="w-5 h-5 text-purple-700" />
+            <Users className="w-5 h-5 text-pink-700" />
             <span>Customer Directory</span>
           </h2>
           <p className="text-xs text-slate-500">
@@ -114,7 +114,7 @@ export const CustomersView: React.FC = () => {
 
         <button
           onClick={handleOpenAdd}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#452B86] hover:bg-[#5B43E8] rounded-xl shadow-xs transition-all active:scale-95 self-start sm:self-auto"
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#C90052] hover:bg-[#E60063] rounded-xl shadow-xs transition-all active:scale-95 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Add New Customer</span>
@@ -143,11 +143,11 @@ export const CustomersView: React.FC = () => {
           return (
             <div
               key={cust.id}
-              className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs hover:border-purple-200 transition-all flex flex-col justify-between"
+              className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs hover:border-pink-200 transition-all flex flex-col justify-between"
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md">
+                  <span className="font-mono text-[10px] font-bold text-pink-700 bg-pink-50 px-2 py-0.5 rounded-md">
                     {cust.code}
                   </span>
                   <span className="text-[11px] font-bold text-slate-500">
@@ -160,7 +160,7 @@ export const CustomersView: React.FC = () => {
                 {cust.phone && (
                   <a
                     href={`tel:${cust.phone}`}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-purple-700 hover:text-purple-900"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-pink-700 hover:text-pink-900"
                   >
                     <Phone className="w-3.5 h-3.5" />
                     <span>{cust.phone}</span>
@@ -185,7 +185,7 @@ export const CustomersView: React.FC = () => {
               <div className="flex items-center justify-end gap-1 pt-3 mt-3 border-t border-slate-100">
                 <button
                   onClick={() => handleOpenEdit(cust)}
-                  className="p-1.5 text-slate-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg"
+                  className="p-1.5 text-slate-500 hover:text-pink-700 hover:bg-pink-50 rounded-lg"
                   title="Edit Customer"
                 >
                   <Edit2 className="w-4 h-4" />
@@ -276,7 +276,7 @@ export const CustomersView: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSave}
-                className="flex-1 py-2 text-xs font-bold text-white bg-[#452B86] rounded-xl hover:bg-[#5B43E8] shadow-xs"
+                className="flex-1 py-2 text-xs font-bold text-white bg-[#C90052] rounded-xl hover:bg-[#E60063] shadow-xs"
               >
                 {editingCustomer ? 'Save Changes' : 'Create Customer'}
               </button>

@@ -18,6 +18,23 @@ export const DEFAULT_RATE_TIERS: PasabuyRateTier[] = [
   { minAmount: 2500, maxAmount: null, percentageFee: 0.15 }
 ];
 
+export type PasabuyFeeConfig = { mode: 'TIERED' | 'FIXED' | 'PERCENT'; value: number };
+export const DEFAULT_PASABUY_FEE_CONFIG: PasabuyFeeConfig = { mode: 'TIERED', value: 0 };
+
+export function parsePasabuyFeeConfig(value?: string): PasabuyFeeConfig {
+  if (!value) return DEFAULT_PASABUY_FEE_CONFIG;
+  try {
+    const parsed = JSON.parse(value) as Partial<PasabuyFeeConfig>;
+    if (!['TIERED', 'FIXED', 'PERCENT'].includes(parsed.mode || '') || typeof parsed.value !== 'number' || !Number.isFinite(parsed.value) || parsed.value < 0) {
+      return DEFAULT_PASABUY_FEE_CONFIG;
+    }
+    if (parsed.mode === 'PERCENT' && parsed.value > 100) return DEFAULT_PASABUY_FEE_CONFIG;
+    return { mode: parsed.mode as PasabuyFeeConfig['mode'], value: parsed.value };
+  } catch {
+    return DEFAULT_PASABUY_FEE_CONFIG;
+  }
+}
+
 /**
  * 2-Decimal safe money rounding (equivalent to MidpointRounding.AwayFromZero)
  */
@@ -56,9 +73,12 @@ export function isCountedItem(item?: Partial<OrderItem>): boolean {
     case 'PENDING':
     case 'PURCHASED':
     case 'BOUGHT_FROM_STOCK':
-      return true;
     case 'UNAVAILABLE':
     case 'REORDER':
+    case 'BACKORDER':
+    case 'ALTERNATIVE_SELECTED':
+    case 'AVAILABLE_AGAIN':
+      return true;
     case 'CANCELLED':
       return false;
     default:
@@ -162,13 +182,19 @@ export function computePasabuyFee(
   items?: OrderItem[],
   tiers: PasabuyRateTier[] = DEFAULT_RATE_TIERS,
   manualOverride?: number | null,
-  overrideNote?: string | null
+  overrideNote?: string | null,
+  feeConfig: PasabuyFeeConfig = DEFAULT_PASABUY_FEE_CONFIG
 ): { fee: number; isAdjusted: boolean } {
   if (manualOverride !== undefined && manualOverride !== null && manualOverride >= 0) {
     return { fee: roundMoney(manualOverride), isAdjusted: true };
   }
 
-  const baseFee = calculateTierFee(feeSubtotal(items), tiers);
+  const eligibleSubtotal = feeSubtotal(items);
+  const baseFee = feeConfig.mode === 'FIXED'
+    ? roundMoney(feeConfig.value)
+    : feeConfig.mode === 'PERCENT'
+      ? roundMoney(eligibleSubtotal * feeConfig.value / 100)
+      : calculateTierFee(eligibleSubtotal, tiers);
   const addlFee = manualFeeTotal(items);
   return { fee: roundMoney(baseFee + addlFee), isAdjusted: false };
 }
@@ -232,18 +258,21 @@ export function deriveOrderStatus(
 /**
  * Full calculation summary for an Order
  */
-export function calculateOrderSummary(order: Partial<Order>, tiers: PasabuyRateTier[] = DEFAULT_RATE_TIERS) {
+export function calculateOrderSummary(order: Partial<Order>, tiers: PasabuyRateTier[] = DEFAULT_RATE_TIERS, feeConfig: PasabuyFeeConfig = DEFAULT_PASABUY_FEE_CONFIG) {
   const subtotal = orderSubtotal(order.items);
+  const hasItems = Boolean(order.items && order.items.length > 0 && order.items.some(isCountedItem));
+
   const { fee: calculatedFee, isAdjusted } = computePasabuyFee(
     order.items,
     tiers,
     order.manualFeeOverride,
-    order.feeOverrideNote
+    order.feeOverrideNote,
+    feeConfig
   );
-  const fee = order.serviceFee !== undefined && order.serviceFee !== null ? order.serviceFee : calculatedFee;
-  const delivery = order.deliveryFee || 0;
-  const discount = order.discount || 0;
-  const grandTotal = computeGrandTotal(subtotal, fee, delivery, discount);
+  const fee = hasItems ? (order.serviceFee !== undefined && order.serviceFee !== null ? order.serviceFee : calculatedFee) : 0;
+  const delivery = hasItems ? (order.deliveryFee || 0) : 0;
+  const discount = hasItems ? (order.discount || 0) : 0;
+  const grandTotal = hasItems ? computeGrandTotal(subtotal, fee, delivery, discount) : 0;
   const paid = computeTotalPaid(order.payments);
   const balance = computeBalanceDue(grandTotal, paid);
   const paymentStatus = getPaymentStatus(grandTotal, paid);

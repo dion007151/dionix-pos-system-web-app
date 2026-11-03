@@ -14,7 +14,7 @@ import {
 import { Expense } from '../../types';
 
 export const ExpensesView: React.FC = () => {
-  const { addToast } = useApp();
+  const { addToast, logUserAction } = useApp();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -57,6 +57,11 @@ export const ExpensesView: React.FC = () => {
     };
 
     await db.expenses.add(newExpense);
+    try {
+      await logUserAction('ADD_EXPENSE', `Added expense: ₱${numAmount.toFixed(2)} for "${description.trim()}" (${category})`);
+    } catch (e) {
+      console.warn('Audit log failed:', e);
+    }
     addToast(`Recorded expense: ₱${numAmount.toFixed(2)} (${category})`, 'success');
     setShowModal(false);
     setDescription('');
@@ -76,7 +81,7 @@ export const ExpensesView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-purple-700" />
+            <Receipt className="w-5 h-5 text-pink-700" />
             <span>Daily Operational Expenses</span>
           </h2>
           <p className="text-xs text-slate-500">
@@ -86,7 +91,7 @@ export const ExpensesView: React.FC = () => {
 
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#452B86] hover:bg-[#5B43E8] rounded-xl shadow-xs transition-all active:scale-95 self-start sm:self-auto"
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#C90052] hover:bg-[#E60063] rounded-xl shadow-xs transition-all active:scale-95 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Record Expense</span>
@@ -113,7 +118,7 @@ export const ExpensesView: React.FC = () => {
 
         <div className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs">
           <span className="text-xs font-semibold text-slate-500">Primary Category</span>
-          <div className="mt-1 text-xl font-bold text-purple-700 flex items-center gap-2">
+          <div className="mt-1 text-xl font-bold text-pink-700 flex items-center gap-2">
             <Fuel className="w-5 h-5" />
             <span>Rider Fuel</span>
           </div>
@@ -127,11 +132,10 @@ export const ExpensesView: React.FC = () => {
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-3 py-1.5 rounded-xl whitespace-nowrap transition-all ${
-              selectedCategory === cat
-                ? 'bg-[#452B86] text-white shadow-xs'
+            className={`px-3 py-1.5 rounded-xl whitespace-nowrap transition-all ${selectedCategory === cat
+                ? 'bg-[#C90052] text-white shadow-xs'
                 : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-            }`}
+              }`}
           >
             {cat === 'ALL' ? 'All Categories' : cat}
           </button>
@@ -286,7 +290,7 @@ export const ExpensesView: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSave}
-                className="flex-1 py-2 text-xs font-bold text-white bg-[#452B86] rounded-xl hover:bg-[#5B43E8] shadow-xs"
+                className="flex-1 py-2 text-xs font-bold text-white bg-[#C90052] rounded-xl hover:bg-[#E60063] shadow-xs"
               >
                 Save Expense
               </button>

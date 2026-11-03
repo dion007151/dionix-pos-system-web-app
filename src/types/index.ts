@@ -1,5 +1,23 @@
 export type BusinessProfileId = 'ANTIQUE_PASABUY' | 'ANGELITOS_RESTO';
 
+export interface BusinessInfo {
+  storeName: string;
+  tagline: string;
+  address: string;
+  phone: string;
+  email: string;
+  receiptFooter: string;
+}
+
+export const DEFAULT_BUSINESS_INFO: BusinessInfo = {
+  storeName: 'ANTIQUE PASABUY & RETAIL',
+  tagline: 'YOUR SHOPPER',
+  address: 'San Angel, San Jose de Buenavista, Antique 5700',
+  phone: '09054853573',
+  email: 'ellimac07161993@gmail.com',
+  receiptFooter: '*** OFFICIAL RECEIPT ***'
+};
+
 export type UserRole = 'Admin' | 'Staff' | 'Shopper';
 
 export interface User {
@@ -8,6 +26,19 @@ export interface User {
   fullName: string;
   role: UserRole;
   isActive: boolean;
+  password?: string;
+}
+
+export interface AuditLog {
+  id: string;
+  userId: string;
+  username: string;
+  fullName: string;
+  role: string;
+  action: string;         // e.g. 'LOGIN', 'LOGOUT', 'VIEW_DASHBOARD', etc.
+  details?: string;       // extra description
+  timestamp: string;      // ISO 8601
+  sessionId: string;      // unique per login session
 }
 
 export type OrderStatus =
@@ -24,7 +55,28 @@ export type ItemStatus =
   | 'BOUGHT_FROM_STOCK'
   | 'UNAVAILABLE'
   | 'REORDER'
+  | 'BACKORDER'
+  | 'ALTERNATIVE_SELECTED'
+  | 'AVAILABLE_AGAIN'
   | 'CANCELLED';
+
+export interface AvailabilityHistoryEntry {
+  action: string;
+  at: string;
+  by: string;
+  reason?: string;
+  expectedRestockDate?: string;
+  alternativeProductId?: string;
+  alternativeProductName?: string;
+  alternativeSupplier?: string;
+  alternativePrice?: number;
+  priceDifference?: number;
+  requiresStaffAction?: boolean;
+  customerDecision?: 'ACCEPTED' | 'DECLINED' | 'PENDING';
+  previousStatus?: ItemStatus;
+  nextStatus?: ItemStatus;
+  affectedOrderNumbers?: string[];
+}
 
 export type PaymentStatus = 'UNPAID' | 'PARTIAL' | 'PAID';
 
@@ -74,9 +126,22 @@ export interface OrderItem {
   manualFeeAmount?: number;
   isFeeExempt?: boolean;
   notes?: string;
+  productId?: string;
   barcode?: string;
   purchasedQty?: number;
   purchaseDate?: string;
+  unavailableReason?: string;
+  unavailableAt?: string;
+  unavailableBy?: string;
+  expectedRestockDate?: string;
+  selectedAlternativeProductId?: string;
+  selectedAlternativeProductName?: string;
+  selectedAlternativeSupplier?: string;
+  selectedAlternativePrice?: number;
+  availabilityHistory?: AvailabilityHistoryEntry[];
+  originalProductName?: string;
+  originalProductId?: string;
+  originalBarcode?: string;
 }
 
 export interface Payment {
@@ -99,18 +164,35 @@ export interface Order {
   status: OrderStatus;
   deliveryType: DeliveryType;
   address: string;
+  addressNote?: string;
   notes?: string;
+  paymentMethod?: PaymentMethod;
+  changeFor?: number;
+  deliveryTime?: string;
+  discountReason?: string;
+  riderFeeIsCustomerCharge?: boolean;
   serviceFee: number;
   deliveryFee: number;
   discount: number;
   manualFeeOverride?: number;
   feeOverrideNote?: string;
   isFeeAdjusted?: boolean;
+  customPasabuyFeeMode?: 'FIXED' | 'PERCENT';
+  customPasabuyFeeValue?: number;
+  additionalFeeMode?: 'FIXED' | 'PERCENT';
+  additionalFeeValue?: number;
+  additionalFeeNote?: string;
   items?: OrderItem[];
   payments?: Payment[];
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
+  isArchived?: boolean;
+  archivedAt?: string;
+  archivedBy?: string;
+  archivedFrom?: 'Order List' | 'Live Buying List';
+  archiveHistory?: Array<{ action: 'ARCHIVED' | 'RESTORED' | 'PERMANENTLY_DELETED'; at: string; by: string }>;
+  source?: string;
 }
 
 export interface Product {
@@ -122,6 +204,8 @@ export interface Product {
   costPrice?: number;
   unit: string;
   barcode?: string;
+  supplier?: string;
+  description?: string;
   isStockItem?: boolean;
   openingStock?: number;
   additionalStocks?: number;
@@ -129,6 +213,8 @@ export interface Product {
   minStockLevel?: number;
   feeType?: ProductFeeType;
   manualFeeAmount?: number;
+  imageUrl?: string;
+  imageSource?: 'upload' | 'open-food-facts' | 'catalog';
 }
 
 export interface StockMovement {
@@ -140,6 +226,11 @@ export interface StockMovement {
   newQuantity: number;
   note: string;
   orderId?: string;
+  reference?: string;
+  movementType?: 'STOCK_IN' | 'STOCK_OUT' | 'ADJUSTMENT';
+  supplier?: string;
+  unitCost?: number;
+  receivedDate?: string;
 }
 
 export interface PasabuyRateTier {

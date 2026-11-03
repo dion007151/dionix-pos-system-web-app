@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { BusinessProfileId, User, Order, RestoOrder } from '../types';
+import { BusinessProfileId, User, Order, RestoOrder, BusinessInfo, DEFAULT_BUSINESS_INFO } from '../types';
 import { db, seedInitialDatabase } from '../db/db';
+import { logActivity } from '../services/auditService';
 
 export type ActiveView =
   | 'dashboard'
@@ -9,10 +10,17 @@ export type ActiveView =
   | 'orders'
   | 'inventory'
   | 'products'
+  | 'masterlist-all'
+  | 'masterlist-orders'
+  | 'masterlist-payments'
+  | 'masterlist-expenses'
+  | 'masterlist-inventory'
+  | 'archive'
   | 'customers'
   | 'expenses'
   | 'reports'
   | 'settings'
+  | 'audit-logs'
   // Restaurant mode views
   | 'resto-register'
   | 'resto-tables'
@@ -34,6 +42,11 @@ interface AppContextType {
   setActiveView: (view: ActiveView) => void;
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
+  isLoggedIn: boolean;
+  sessionId: string;
+  login: (user: User, sessionId: string) => void;
+  logout: () => void;
+  logUserAction: (action: string, details?: string) => Promise<void>;
   isOnline: boolean;
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (open: boolean) => void;
@@ -48,6 +61,9 @@ interface AppContextType {
   openReceiptModal: (data: { order?: Order; restoOrder?: RestoOrder }) => void;
   closeReceiptModal: () => void;
   isInitialized: boolean;
+  businessInfo: BusinessInfo;
+  updateBusinessInfo: (info: Partial<BusinessInfo>) => Promise<void>;
+  resetBusinessInfo: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -55,17 +71,23 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeProfile, setActiveProfileState] = useState<BusinessProfileId>('ANTIQUE_PASABUY');
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
-  const [currentUser, setCurrentUser] = useState<User | null>({
-    id: 'usr-1',
-    username: 'admin',
-    fullName: 'Administrator',
-    role: 'Admin',
-    isActive: true
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [sessionId, setSessionId] = useState<string>('');
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
+
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>(() => {
+    try {
+      const cached = localStorage.getItem('antique_business_info');
+      if (cached) {
+        return { ...DEFAULT_BUSINESS_INFO, ...JSON.parse(cached) };
+      }
+    } catch { }
+    return DEFAULT_BUSINESS_INFO;
+  });
 
   const [receiptModal, setReceiptModal] = useState<{
     isOpen: boolean;
@@ -84,6 +106,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (savedProfile.value === 'ANGELITOS_RESTO') {
             setActiveView('resto-register');
           }
+        }
+
+        const savedInfo = await db.settings.get('business_info');
+        if (savedInfo?.value) {
+          try {
+            const parsed = JSON.parse(savedInfo.value);
+            setBusinessInfo(prev => ({ ...prev, ...parsed }));
+            localStorage.setItem('antique_business_info', JSON.stringify({ ...DEFAULT_BUSINESS_INFO, ...parsed }));
+          } catch { }
         }
       } catch (err) {
         console.error('Database initialization error:', err);
@@ -136,6 +167,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setReceiptModal({ isOpen: false });
   };
 
+  const login = (user: User, sid: string) => {
+    setCurrentUser(user);
+    setSessionId(sid);
+    setIsLoggedIn(true);
+    setActiveView('dashboard');
+  };
+
+  const logout = async () => {
+    if (currentUser && sessionId) {
+      try {
+        await logActivity(
+          currentUser.id,
+          currentUser.username,
+          currentUser.fullName,
+          currentUser.role,
+          'LOGOUT',
+          sessionId,
+          'User logged out'
+        );
+      } catch (err) {
+        console.error('Failed to log logout activity:', err);
+      }
+    }
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+    setSessionId('');
+    setActiveView('dashboard');
+  };
+
+  const logUserAction = async (action: string, details?: string) => {
+    if (currentUser) {
+      try {
+        await logActivity(
+          currentUser.id,
+          currentUser.username,
+          currentUser.fullName,
+          currentUser.role,
+          action,
+          sessionId || 'sess-unknown',
+          details
+        );
+      } catch (err) {
+        console.error('Failed to log user action:', err);
+      }
+    }
+  };
+
+  const updateBusinessInfo = async (patch: Partial<BusinessInfo>) => {
+    const updated = { ...businessInfo, ...patch };
+    setBusinessInfo(updated);
+    try {
+      localStorage.setItem('antique_business_info', JSON.stringify(updated));
+      await db.settings.put({ key: 'business_info', value: JSON.stringify(updated) });
+    } catch (err) {
+      console.error('Failed to save business info:', err);
+    }
+  };
+
+  const resetBusinessInfo = async () => {
+    setBusinessInfo(DEFAULT_BUSINESS_INFO);
+    try {
+      localStorage.setItem('antique_business_info', JSON.stringify(DEFAULT_BUSINESS_INFO));
+      await db.settings.put({ key: 'business_info', value: JSON.stringify(DEFAULT_BUSINESS_INFO) });
+    } catch (err) {
+      console.error('Failed to reset business info:', err);
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -145,6 +244,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setActiveView,
         currentUser,
         setCurrentUser,
+        isLoggedIn,
+        sessionId,
+        login,
+        logout,
+        logUserAction,
         isOnline,
         isMobileMenuOpen,
         setIsMobileMenuOpen,
@@ -154,7 +258,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         receiptModal,
         openReceiptModal,
         closeReceiptModal,
-        isInitialized
+        isInitialized,
+        businessInfo,
+        updateBusinessInfo,
+        resetBusinessInfo
       }}
     >
       {children}

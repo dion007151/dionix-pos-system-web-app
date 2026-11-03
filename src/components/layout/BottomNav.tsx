@@ -55,7 +55,7 @@ export const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around h-16 bg-white border-t border-slate-200 shadow-lg md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around h-16 bg-white border-t border-pink-100 shadow-[0_-6px_20px_rgba(55,19,32,0.08)] md:hidden">
       {tabs.map(tab => {
         const Icon = tab.icon;
         const isActive = activeView === tab.id;
@@ -65,7 +65,7 @@ export const BottomNav: React.FC = () => {
             key={tab.id}
             onClick={() => setActiveView(tab.id as any)}
             className={`relative flex flex-col items-center justify-center flex-1 h-full py-1 text-center transition-all ${
-              isActive ? 'text-[#452B86] font-bold' : 'text-slate-500 font-normal'
+              isActive ? 'text-[#C90052] font-bold' : 'text-slate-500 font-normal'
             }`}
           >
             <div className="relative">
