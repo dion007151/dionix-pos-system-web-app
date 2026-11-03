@@ -5,7 +5,7 @@ export interface SupabaseConfig {
   anonKey: string;
 }
 
-export const DEFAULT_SUPABASE_URL = 'https://hgoylqrxgjypmfofbxzg.supabase.co';
+export const DEFAULT_SUPABASE_URL = 'https://hgoylqrxgiypmfofbxzg.supabase.co';
 export const DEFAULT_SUPABASE_KEY = 'sb_publishable_VdIwOrLH_Jep9M5VDr17mQ_anyKDOE8';
 
 const STORAGE_KEY = 'antique_pasabuy_supabase_config';
