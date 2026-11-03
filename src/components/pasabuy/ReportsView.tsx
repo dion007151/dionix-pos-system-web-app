@@ -5,7 +5,7 @@ import { db } from '../../db/db';
 import {
   BarChart3, Download, Calendar, DollarSign, TrendingUp, Receipt,
   Search, ShoppingBag, CreditCard, Wallet, FileText, Table, Printer,
-  ChevronDown
+  ChevronDown, ArrowUpRight, ArrowDownRight, Building2
 } from 'lucide-react';
 import { calculateOrderSummary } from '../../services/calc';
 import { Expense, Order, OrderItem, Payment } from '../../types';
@@ -114,9 +114,10 @@ export const ReportsView: React.FC = () => {
   const storeName = businessInfo.storeName || 'ANTIQUE PASABUY & RETAIL';
   const storeAddress = businessInfo.address || 'San Angel, San Jose de Buenavista, Antique 5700';
   const storePhone = businessInfo.phone || '09054853573';
+  const storeEmail = businessInfo.email || 'ellimac07161993@gmail.com';
   const preparer = currentUser?.fullName || currentUser?.username || 'Admin';
 
-  // Handle clicking outside export dropdown
+  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -217,41 +218,42 @@ export const ReportsView: React.FC = () => {
     );
   }, [transactions, search, recordType]);
 
-  const pageSize = 10;
+  const pageSize = 12;
   const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
   const pageRows = filteredRows.slice((page - 1) * pageSize, page * pageSize);
 
   const periodLabel = `${new Date(`${range.from}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })} – ${new Date(`${range.to}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   
   const summaryRows: [string, number][] = [
-    ['Total Sales Revenue', currentTotals.sales],
+    ['Gross Sales Revenue', currentTotals.sales],
     ['Cost of Goods Sold (COGS)', currentTotals.cogs],
     ['Gross Operating Profit', currentTotals.grossProfit],
-    ['Total Operating Expenses', currentTotals.expenses],
-    ['Net Operating Profit', currentTotals.netProfit],
-    ['Collected Payments', currentTotals.collected],
-    ['Outstanding Receivables', currentTotals.outstanding]
+    ['Operating Expenditures', currentTotals.expenses],
+    ['Net Operating Profit / (Loss)', currentTotals.netProfit],
+    ['Collected Payments Received', currentTotals.collected],
+    ['Outstanding Accounts Receivable', currentTotals.outstanding]
   ];
 
-  // 1. EXPORT CSV (Clean, unbloated, UTF-8 BOM, standard financial column order)
+  // 1. EXPORT CSV (Corporate Bookkeeping Format with UTF-8 BOM)
   const exportCsv = () => {
     setExportOpen(false);
-    const filename = `financial-report-${range.from}-to-${range.to}.csv`;
+    const filename = `financial-statement-${range.from}-to-${range.to}.csv`;
     const lines: unknown[][] = [
-      ['BUSINESS ENTITY', storeName],
-      ['LOCATION / ADDRESS', storeAddress],
-      ['CONTACT NUMBER', storePhone],
-      ['STATEMENT TITLE', 'FINANCIAL PERFORMANCE REPORT & LEDGER'],
-      ['PERIOD COVERED', periodLabel],
-      ['DATE GENERATED', new Date().toLocaleString('en-PH')],
-      ['PREPARED BY', preparer],
+      ['STATEMENT OF FINANCIAL PERFORMANCE & AUDIT TRAIL'],
+      ['Entity Name:', storeName],
+      ['Business Address:', storeAddress],
+      ['Contact Number:', storePhone],
+      ['Reporting Period:', periodLabel],
+      ['Statement Currency:', 'PHP (Philippine Peso)'],
+      ['Date Generated:', new Date().toLocaleString('en-PH')],
+      ['Prepared By:', preparer],
       [],
-      ['STATEMENT OF PROFIT & LOSS SUMMARY'],
+      ['=== SECTION 1: PROFIT & LOSS PERFORMANCE SUMMARY ==='],
       ['Line Item', 'Amount (PHP)'],
       ...summaryRows.map(([label, val]) => [label, val.toFixed(2)]),
       [],
-      ['DETAILED TRANSACTION LEDGER'],
-      ['Date & Time', 'Reference No.', 'Record Type', 'Customer / Payee', 'Category / Order Reference', 'Payment Method', 'Amount (PHP)', 'Status'],
+      ['=== SECTION 2: ITEMIZED TRANSACTION AUDIT LEDGER ==='],
+      ['Timestamp', 'Reference ID', 'Type', 'Customer / Payee', 'Category / Order Ref', 'Payment Channel', 'Amount (PHP)', 'Reconciliation Status'],
       ...filteredRows.map(row => [
         new Date(row.date).toLocaleString('en-PH'),
         row.reference,
@@ -261,7 +263,10 @@ export const ReportsView: React.FC = () => {
         row.method,
         row.amount.toFixed(2),
         row.status
-      ])
+      ]),
+      [],
+      ['Total Transaction Count:', filteredRows.length],
+      ['Total Volume Value (PHP):', filteredRows.reduce((sum, r) => sum + r.amount, 0).toFixed(2)]
     ];
 
     const csvContent = '\ufeff' + lines.map(row =>
@@ -269,70 +274,69 @@ export const ReportsView: React.FC = () => {
     ).join('\r\n');
 
     downloadFile(csvContent, filename, 'text/csv;charset=utf-8');
-    addToast('Financial Report CSV downloaded successfully', 'success');
+    addToast('Financial Report CSV exported', 'success');
   };
 
-  // 2. EXPORT EXCEL (Executive typography, clean cell borders, no garish colors, proper accounting alignment)
+  // 2. EXPORT EXCEL (Executive Financial Model Spreadsheet)
   const exportExcel = () => {
     setExportOpen(false);
-    const filename = `financial-report-${range.from}-to-${range.to}.xls`;
+    const filename = `financial-statement-${range.from}-to-${range.to}.xls`;
 
-    const summaryHtml = summaryRows.map(([label, val], idx) => {
+    const summaryHtml = summaryRows.map(([label, val]) => {
       const isNet = label.includes('Net Operating Profit');
       const isGross = label.includes('Gross Operating Profit');
-      const isHighlight = isNet || isGross;
       return `
-        <tr style="${isHighlight ? 'font-weight:bold;background:#F1F5F9;' : idx % 2 === 1 ? 'background:#F8FAFC;' : 'background:#FFFFFF;'}">
-          <td style="padding:7px 12px;border:1px solid #CBD5E1;color:#1E293B;">${escapeHtml(label)}</td>
-          <td style="padding:7px 12px;text-align:right;border:1px solid #CBD5E1;color:${val < 0 ? '#DC2626' : '#0F172A'};font-family:'Consolas','Courier New',monospace;">
-            ₱${val.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        <tr style="height:24px;${isNet ? 'background:#F1F5F9;font-weight:bold;border-top:1pt solid #0F172A;border-bottom:2pt double #0F172A;' : isGross ? 'font-weight:bold;background:#F8FAFC;' : ''}">
+          <td style="padding:6px 12px;border:0.5pt solid #CBD5E1;font-size:10pt;">${escapeHtml(label)}</td>
+          <td style="padding:6px 12px;text-align:right;border:0.5pt solid #CBD5E1;font-family:'Consolas','Courier New',monospace;font-size:10pt;color:${val < 0 ? '#DC2626' : '#0F172A'};">
+            ${val < 0 ? `(₱${Math.abs(val).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})` : `₱${val.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           </td>
         </tr>
       `;
     }).join('');
 
     const rowsHtml = filteredRows.map((row, i) => `
-      <tr style="background:${i % 2 === 0 ? '#FFFFFF' : '#F8FAFC'};">
-        <td style="padding:6px 8px;border:1px solid #E2E8F0;font-size:10px;">${escapeHtml(new Date(row.date).toLocaleString('en-PH'))}</td>
-        <td style="padding:6px 8px;border:1px solid #E2E8F0;font-weight:600;font-family:monospace;">${escapeHtml(row.reference)}</td>
-        <td style="padding:6px 8px;text-align:center;border:1px solid #E2E8F0;font-size:10px;text-transform:uppercase;">${escapeHtml(row.type)}</td>
-        <td style="padding:6px 8px;border:1px solid #E2E8F0;">${escapeHtml(row.description)}</td>
-        <td style="padding:6px 8px;border:1px solid #E2E8F0;color:#64748B;">${escapeHtml(row.relatedOrder || '—')}</td>
-        <td style="padding:6px 8px;border:1px solid #E2E8F0;color:#475569;">${escapeHtml(row.method)}</td>
-        <td style="padding:6px 8px;text-align:right;font-weight:bold;border:1px solid #E2E8F0;font-family:'Consolas','Courier New',monospace;">
+      <tr style="height:22px;background:${i % 2 === 0 ? '#FFFFFF' : '#F8FAFC'};">
+        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;font-size:9pt;">${escapeHtml(new Date(row.date).toLocaleString('en-PH'))}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;font-family:'Consolas',monospace;font-weight:bold;font-size:9pt;">${escapeHtml(row.reference)}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;text-align:center;font-size:9pt;font-weight:bold;">${escapeHtml(row.type)}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;font-size:9pt;">${escapeHtml(row.description)}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;font-size:9pt;color:#64748B;">${escapeHtml(row.relatedOrder || '—')}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;font-size:9pt;color:#475569;">${escapeHtml(row.method)}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;text-align:right;font-family:'Consolas',monospace;font-weight:bold;font-size:9pt;">
           ₱${row.amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </td>
-        <td style="padding:6px 8px;text-align:center;border:1px solid #E2E8F0;font-size:10px;font-weight:600;">${escapeHtml(row.status)}</td>
+        <td style="padding:5px 8px;border:0.5pt solid #E2E8F0;text-align:center;font-size:8.5pt;font-weight:bold;">${escapeHtml(row.status)}</td>
       </tr>
     `).join('');
 
     const excelHtml = `
       <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
         <head>
-          <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Statement & Ledger</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+          <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Financial Statement</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
           <meta http-equiv="content-type" content="text/plain; charset=UTF-8"/>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; font-size: 11px; color: #0F172A; }
-            table { border-collapse: collapse; width: 100%; }
+            body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; color: #0F172A; }
+            table { border-collapse: collapse; }
           </style>
         </head>
-        <body style="padding:20px;">
-          <table style="width:100%;margin-bottom:16px;">
+        <body style="padding:24px;">
+          <table style="width:100%;margin-bottom:20px;">
             <tr>
-              <td colspan="4">
-                <h2 style="margin:0;font-size:16px;color:#0F172A;font-weight:bold;">${escapeHtml(storeName)}</h2>
-                <div style="color:#64748B;font-size:11px;margin-top:2px;">${escapeHtml(storeAddress)} · Phone: ${escapeHtml(storePhone)}</div>
-                <div style="font-size:13px;font-weight:bold;color:#451323;margin-top:6px;">FINANCIAL PERFORMANCE REPORT &amp; TRANSACTION AUDIT</div>
-                <div style="color:#475569;font-size:10px;margin-top:2px;">Period: ${escapeHtml(periodLabel)} | Generated: ${new Date().toLocaleString('en-PH')} | Prepared by: ${escapeHtml(preparer)}</div>
+              <td colspan="5">
+                <div style="font-size:16pt;font-weight:bold;color:#0F172A;letter-spacing:-0.5px;">${escapeHtml(storeName)}</div>
+                <div style="color:#64748B;font-size:9.5pt;margin-top:2px;">${escapeHtml(storeAddress)} · Phone: ${escapeHtml(storePhone)} · Email: ${escapeHtml(storeEmail)}</div>
+                <div style="font-size:12pt;font-weight:bold;color:#451323;margin-top:10px;">STATEMENT OF FINANCIAL PERFORMANCE &amp; TRANSACTION AUDIT</div>
+                <div style="color:#475569;font-size:9pt;margin-top:2px;">Reporting Range: ${escapeHtml(periodLabel)} | Run Time: ${new Date().toLocaleString('en-PH')} | Prepared by: ${escapeHtml(preparer)}</div>
               </td>
             </tr>
           </table>
 
-          <table style="width:520px;margin-bottom:24px;border:1px solid #CBD5E1;">
+          <table style="width:540px;margin-bottom:28px;border:1pt solid #0F172A;">
             <thead>
-              <tr style="background:#1E293B;color:#FFFFFF;">
-                <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:bold;">P&amp;L Performance Metric</th>
-                <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:bold;">Amount (PHP)</th>
+              <tr style="background:#0F172A;color:#FFFFFF;height:26px;">
+                <th style="padding:6px 12px;text-align:left;font-size:10pt;font-weight:bold;">Executive Profit &amp; Loss Breakdown</th>
+                <th style="padding:6px 12px;text-align:right;font-size:10pt;font-weight:bold;">Amount (PHP)</th>
               </tr>
             </thead>
             <tbody>
@@ -340,17 +344,17 @@ export const ReportsView: React.FC = () => {
             </tbody>
           </table>
 
-          <table style="border:1px solid #CBD5E1;">
+          <table style="width:100%;border:1pt solid #CBD5E1;">
             <thead>
-              <tr style="background:#1E293B;color:#FFFFFF;font-weight:bold;font-size:11px;">
-                <th style="padding:8px;text-align:left;">Date &amp; Time</th>
-                <th style="padding:8px;text-align:left;">Reference #</th>
-                <th style="padding:8px;text-align:center;">Type</th>
-                <th style="padding:8px;text-align:left;">Customer / Description</th>
-                <th style="padding:8px;text-align:left;">Category / Reference</th>
-                <th style="padding:8px;text-align:left;">Payment Method</th>
-                <th style="padding:8px;text-align:right;">Amount (PHP)</th>
-                <th style="padding:8px;text-align:center;">Status</th>
+              <tr style="background:#0F172A;color:#FFFFFF;font-weight:bold;font-size:9.5pt;height:26px;">
+                <th style="padding:6px 8px;text-align:left;">Timestamp</th>
+                <th style="padding:6px 8px;text-align:left;">Reference #</th>
+                <th style="padding:6px 8px;text-align:center;">Type</th>
+                <th style="padding:6px 8px;text-align:left;">Customer / Payee Particulars</th>
+                <th style="padding:6px 8px;text-align:left;">Category / Reference</th>
+                <th style="padding:6px 8px;text-align:left;">Payment Channel</th>
+                <th style="padding:6px 8px;text-align:right;">Amount (PHP)</th>
+                <th style="padding:6px 8px;text-align:center;">Reconciliation Status</th>
               </tr>
             </thead>
             <tbody>
@@ -365,7 +369,7 @@ export const ReportsView: React.FC = () => {
     addToast('Financial Report Excel workbook exported', 'success');
   };
 
-  // 3. EXPORT DIRECT PDF (Executive Corporate A4 Landscape Format)
+  // 3. EXPORT DIRECT PDF (Executive Corporate A4 Landscape Statement)
   const exportPdf = async () => {
     setExportOpen(false);
     const target = document.getElementById('printable-financial-report');
@@ -375,11 +379,11 @@ export const ReportsView: React.FC = () => {
     }
 
     setIsExportingPdf(true);
-    addToast('Rendering PDF statement, please wait...', 'info');
+    addToast('Generating executive PDF statement...', 'info');
 
     try {
       const dateStr = new Date().toISOString().split('T')[0];
-      const filename = `financial-report-${dateStr}.pdf`;
+      const filename = `financial-statement-${dateStr}.pdf`;
 
       const opt = {
         margin: [8, 8, 8, 8],
@@ -423,17 +427,17 @@ export const ReportsView: React.FC = () => {
       await html2pdfModule().set(opt).from(clone).save();
 
       document.body.removeChild(container);
-      addToast('Financial Report PDF downloaded successfully', 'success');
+      addToast('Financial Statement PDF downloaded successfully', 'success');
     } catch (err: any) {
       console.error('PDF export error:', err);
-      addToast('Direct PDF export encountered an issue. Opening print view...', 'info');
+      addToast('Direct PDF export failed. Opening print view...', 'info');
       printReport();
     } finally {
       setIsExportingPdf(false);
     }
   };
 
-  // 4. PRINT REPORT (Browser Landscape Dialog)
+  // 4. PRINT REPORT (Browser Print Dialog)
   const printReport = () => {
     setExportOpen(false);
     document.body.classList.add('printing-financial-report');
@@ -443,105 +447,199 @@ export const ReportsView: React.FC = () => {
     }, 1500);
   };
 
-  // Executive Branded Print Document (Clean corporate styling, crisp spacing, no AI slop)
+  // Executive Branded Financial Statement Document (Standard Corporate Accounting Formatting)
   const renderPrintDocument = () => (
-    <article id="printable-financial-report" className="hidden print:block bg-white text-slate-900 font-sans">
-      {/* Header */}
-      <header className="flex items-start justify-between border-b-2 border-slate-900 pb-4 mb-4">
-        <div className="flex items-center gap-3.5">
-          <img src={SHOPPER_LOGO_DATA_URL} alt="Store logo" className="h-12 w-auto object-contain" />
+    <article
+      id="printable-financial-report"
+      className="hidden print:block bg-white text-slate-900"
+      style={{
+        fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif",
+        lineHeight: 1.35
+      }}
+    >
+      {/* Official Header */}
+      <header
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          borderBottom: '2px solid #0F172A',
+          paddingBottom: '14px',
+          marginBottom: '16px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <img
+            src={SHOPPER_LOGO_DATA_URL}
+            alt="Entity logo"
+            style={{ height: '48px', width: 'auto', objectFit: 'contain' }}
+          />
           <div>
-            <h1 className="text-lg font-black tracking-tight text-slate-950 uppercase m-0 leading-tight">{storeName}</h1>
-            <p className="text-[11px] text-slate-600 m-0 mt-0.5">{storeAddress}</p>
-            <p className="text-[10px] text-slate-500 m-0">Tel: {storePhone} {businessInfo.email ? `| Email: ${businessInfo.email}` : ''}</p>
+            <div style={{ fontSize: '15px', fontWeight: 900, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '-0.3px' }}>
+              {storeName}
+            </div>
+            <div style={{ fontSize: '10px', color: '#475569', marginTop: '2px' }}>
+              {storeAddress}
+            </div>
+            <div style={{ fontSize: '9.5px', color: '#64748B', marginTop: '1px' }}>
+              Tel: {storePhone} · Email: {storeEmail}
+            </div>
           </div>
         </div>
 
-        <div className="text-right">
-          <div className="text-xs font-black tracking-wider text-slate-950 uppercase">Statement of Financial Performance</div>
-          <div className="text-[11px] font-semibold text-slate-700 mt-0.5">Period: {periodLabel}</div>
-          <div className="text-[9px] text-slate-400 mt-0.5">Generated: {new Date().toLocaleString('en-PH')} | Prepared by: {preparer}</div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '12px', fontWeight: 900, color: '#0F172A', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+            Statement of Financial Performance
+          </div>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: '#451323', marginTop: '2px' }}>
+            Period Covered: {periodLabel}
+          </div>
+          <div style={{ fontSize: '9px', color: '#64748B', marginTop: '2px' }}>
+            Document ID: STMT-{range.from.replace(/-/g, '')}-{range.to.replace(/-/g, '')} · Generated: {new Date().toLocaleString('en-PH')}
+          </div>
+          <div style={{ fontSize: '9px', color: '#64748B' }}>
+            Prepared By: {preparer}
+          </div>
         </div>
       </header>
 
-      {/* P&L Financial Summary Grid */}
-      <section className="mb-4">
-        <div className="border border-slate-300 rounded-lg overflow-hidden">
-          <div className="bg-slate-100 px-3 py-1.5 border-b border-slate-300 flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-            <span>Executive Summary</span>
-            <span>All values in Philippine Peso (PHP)</span>
+      {/* Dual Table P&L + Balance / Cash Position Summary */}
+      <section style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px', marginBottom: '16px' }}>
+        {/* Table 1: P&L Statement */}
+        <div style={{ border: '1px solid #CBD5E1', borderRadius: '4px', overflow: 'hidden' }}>
+          <div style={{ background: '#0F172A', color: '#FFFFFF', padding: '6px 10px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            I. Statement of Operating Profit &amp; Loss
           </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9.5px' }}>
+            <tbody>
+              <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+                <td style={{ padding: '5px 10px', color: '#334155' }}>Gross Sales Revenue (Orders Fulfilled)</td>
+                <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace' }}>
+                  {peso(currentTotals.sales)}
+                </td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+                <td style={{ padding: '5px 10px', color: '#334155' }}>Less: Cost of Goods Sold (Procurement)</td>
+                <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace', color: '#64748B' }}>
+                  ({peso(currentTotals.cogs)})
+                </td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #CBD5E1', background: '#F1F5F9', fontWeight: 800 }}>
+                <td style={{ padding: '6px 10px', color: '#0F172A' }}>Gross Operating Margin</td>
+                <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'Consolas, monospace', color: '#0F172A' }}>
+                  {peso(currentTotals.grossProfit)}
+                </td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+                <td style={{ padding: '5px 10px', color: '#334155' }}>Less: Operating &amp; Store Expenses</td>
+                <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace', color: '#DC2626' }}>
+                  ({peso(currentTotals.expenses)})
+                </td>
+              </tr>
+              <tr style={{ background: '#FFFFFF', fontWeight: 900, borderTop: '1px solid #0F172A', borderBottom: '3px double #0F172A' }}>
+                <td style={{ padding: '7px 10px', fontSize: '10.5px', color: '#0F172A' }}>NET OPERATING PROFIT / (LOSS)</td>
+                <td style={{ padding: '7px 10px', fontSize: '11px', textAlign: 'right', fontFamily: 'Consolas, monospace', color: currentTotals.netProfit < 0 ? '#DC2626' : '#0F172A' }}>
+                  {peso(currentTotals.netProfit)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-          <div className="grid grid-cols-4 divide-x divide-slate-200 text-center py-2.5 bg-slate-50/50">
-            <div className="px-3">
-              <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-500">Gross Sales</span>
-              <span className="block text-sm font-black text-slate-900 mt-0.5">{peso(currentTotals.sales)}</span>
-              <span className="block text-[8px] text-slate-400">Total customer orders</span>
-            </div>
-            <div className="px-3">
-              <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-500">Cost of Goods (COGS)</span>
-              <span className="block text-sm font-black text-slate-800 mt-0.5">{peso(currentTotals.cogs)}</span>
-              <span className="block text-[8px] text-slate-400">Item procurement cost</span>
-            </div>
-            <div className="px-3">
-              <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-500">Gross Operating Profit</span>
-              <span className="block text-sm font-black text-slate-900 mt-0.5">{peso(currentTotals.grossProfit)}</span>
-              <span className="block text-[8px] text-slate-400">Sales minus COGS</span>
-            </div>
-            <div className="px-3">
-              <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-500">Net Operating Profit</span>
-              <span className={`block text-sm font-black mt-0.5 ${currentTotals.netProfit < 0 ? 'text-rose-700' : 'text-slate-950'}`}>
-                {peso(currentTotals.netProfit)}
-              </span>
-              <span className="block text-[8px] text-slate-400">After operating expenses</span>
-            </div>
+        {/* Table 2: Working Capital & Position */}
+        <div style={{ border: '1px solid #CBD5E1', borderRadius: '4px', overflow: 'hidden' }}>
+          <div style={{ background: '#334155', color: '#FFFFFF', padding: '6px 10px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            II. Receivables &amp; Collections Position
           </div>
-
-          <div className="border-t border-slate-200 bg-white px-4 py-2 flex items-center justify-between text-[10px] text-slate-600">
-            <div><strong>Operating Expenses:</strong> {peso(currentTotals.expenses)}</div>
-            <div className="h-3 w-px bg-slate-200" />
-            <div><strong>Collected Payments:</strong> {peso(currentTotals.collected)}</div>
-            <div className="h-3 w-px bg-slate-200" />
-            <div><strong>Outstanding Receivables:</strong> {peso(currentTotals.outstanding)}</div>
-            <div className="h-3 w-px bg-slate-200" />
-            <div><strong>Total Transactions:</strong> {filteredRows.length} records</div>
-          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9.5px' }}>
+            <tbody>
+              <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+                <td style={{ padding: '5px 10px', color: '#334155' }}>Total Payments Collected &amp; Received</td>
+                <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace', color: '#0F172A' }}>
+                  {peso(currentTotals.collected)}
+                </td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+                <td style={{ padding: '5px 10px', color: '#334155' }}>Outstanding Accounts Receivable</td>
+                <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace', color: '#D97706' }}>
+                  {peso(currentTotals.outstanding)}
+                </td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #E2E8F0' }}>
+                <td style={{ padding: '5px 10px', color: '#334155' }}>Total Logged Activity Records</td>
+                <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace' }}>
+                  {filteredRows.length} events
+                </td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+                <td style={{ padding: '5px 10px', color: '#334155' }}>Gross Margin Ratio</td>
+                <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontFamily: 'Consolas, monospace' }}>
+                  {currentTotals.sales > 0 ? `${((currentTotals.grossProfit / currentTotals.sales) * 100).toFixed(1)}%` : '0.0%'}
+                </td>
+              </tr>
+              <tr style={{ background: '#FFFFFF', fontWeight: 800, borderTop: '1px solid #0F172A', borderBottom: '3px double #0F172A' }}>
+                <td style={{ padding: '7px 10px', fontSize: '10px', color: '#0F172A' }}>Net Operating Margin Ratio</td>
+                <td style={{ padding: '7px 10px', textAlign: 'right', fontFamily: 'Consolas, monospace', color: currentTotals.netProfit < 0 ? '#DC2626' : '#0F172A' }}>
+                  {currentTotals.sales > 0 ? `${((currentTotals.netProfit / currentTotals.sales) * 100).toFixed(1)}%` : '0.0%'}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
-      {/* Transaction Audit Ledger */}
-      <div className="mb-4">
-        <table className="w-full border-collapse text-left text-[9px]">
+      {/* Itemized Audit Ledger */}
+      <div style={{ marginBottom: '18px' }}>
+        <div style={{ fontSize: '10px', fontWeight: 800, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px' }}>
+          III. Itemized Transaction Audit Register
+        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5px' }}>
           <thead>
-            <tr className="bg-slate-900 text-white">
-              <th className="p-1.5 border border-slate-700">Date &amp; Time</th>
-              <th className="p-1.5 border border-slate-700">Reference #</th>
-              <th className="p-1.5 border border-slate-700 text-center">Type</th>
-              <th className="p-1.5 border border-slate-700">Customer / Payee Description</th>
-              <th className="p-1.5 border border-slate-700">Category / Order Ref</th>
-              <th className="p-1.5 border border-slate-700">Method</th>
-              <th className="p-1.5 border border-slate-700 text-right">Amount (PHP)</th>
-              <th className="p-1.5 border border-slate-700 text-center">Status</th>
+            <tr style={{ background: '#0F172A', color: '#FFFFFF', fontWeight: 800 }}>
+              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #0F172A' }}>Date &amp; Time</th>
+              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #0F172A' }}>Reference #</th>
+              <th style={{ padding: '5px 6px', textAlign: 'center', border: '0.5pt solid #0F172A' }}>Type</th>
+              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #0F172A' }}>Customer / Payee Particulars</th>
+              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #0F172A' }}>Category / Ref</th>
+              <th style={{ padding: '5px 6px', textAlign: 'left', border: '0.5pt solid #0F172A' }}>Payment Channel</th>
+              <th style={{ padding: '5px 6px', textAlign: 'right', border: '0.5pt solid #0F172A' }}>Amount (PHP)</th>
+              <th style={{ padding: '5px 6px', textAlign: 'center', border: '0.5pt solid #0F172A' }}>Reconciliation</th>
             </tr>
           </thead>
           <tbody>
             {filteredRows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-4 text-center text-slate-400 border border-slate-200">
-                  No records found for the selected reporting period.
+                <td colSpan={8} style={{ padding: '16px', textAlign: 'center', color: '#94A3B8', border: '0.5pt solid #CBD5E1' }}>
+                  No transaction events recorded within the specified statement range.
                 </td>
               </tr>
             ) : (
               filteredRows.map((row, idx) => (
-                <tr key={row.id} className={idx % 2 === 1 ? 'bg-slate-50' : 'bg-white'}>
-                  <td className="p-1 border border-slate-200 whitespace-nowrap">{new Date(row.date).toLocaleString('en-PH')}</td>
-                  <td className="p-1 border border-slate-200 font-mono font-semibold">{row.reference}</td>
-                  <td className="p-1 border border-slate-200 text-center font-bold text-[8px] uppercase">{row.type}</td>
-                  <td className="p-1 border border-slate-200 font-medium">{row.description}</td>
-                  <td className="p-1 border border-slate-200 text-slate-500">{row.relatedOrder || '—'}</td>
-                  <td className="p-1 border border-slate-200">{row.method}</td>
-                  <td className="p-1 border border-slate-200 text-right font-mono font-bold">{peso(row.amount)}</td>
-                  <td className="p-1 border border-slate-200 text-center text-[8px] font-semibold uppercase">{row.status}</td>
+                <tr key={row.id} style={{ background: idx % 2 === 1 ? '#F8FAFC' : '#FFFFFF' }}>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', whiteSpace: 'nowrap' }}>
+                    {new Date(row.date).toLocaleString('en-PH')}
+                  </td>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', fontFamily: 'Consolas, monospace', fontWeight: 700 }}>
+                    {row.reference}
+                  </td>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', textAlign: 'center', fontWeight: 700, fontSize: '8px', textTransform: 'uppercase' }}>
+                    {row.type}
+                  </td>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', fontWeight: 500 }}>
+                    {row.description}
+                  </td>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', color: '#64748B' }}>
+                    {row.relatedOrder || '—'}
+                  </td>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', color: '#475569' }}>
+                    {row.method}
+                  </td>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', textAlign: 'right', fontFamily: 'Consolas, monospace', fontWeight: 700 }}>
+                    {peso(row.amount)}
+                  </td>
+                  <td style={{ padding: '4px 6px', border: '0.5pt solid #E2E8F0', textAlign: 'center', fontWeight: 600, fontSize: '7.5px', textTransform: 'uppercase' }}>
+                    {row.status}
+                  </td>
                 </tr>
               ))
             )}
@@ -549,179 +647,165 @@ export const ReportsView: React.FC = () => {
         </table>
       </div>
 
-      {/* Corporate Signatures Block */}
-      <footer className="grid grid-cols-3 gap-8 pt-3 border-t border-slate-300 text-center text-[10px]">
-        <div>
-          <span className="block text-slate-500 text-[9px]">Prepared By:</span>
-          <div className="mt-7 border-b border-slate-400 mx-auto w-3/4" />
-          <span className="block font-bold text-slate-800 mt-1">{preparer}</span>
+      {/* Official Attestation & Tripartite Sign-off */}
+      <footer style={{ borderTop: '1px solid #CBD5E1', paddingTop: '12px', marginTop: '16px' }}>
+        <div style={{ fontSize: '8px', color: '#64748B', textAlign: 'center', marginBottom: '14px', fontStyle: 'italic' }}>
+          "I hereby certify and declare that this Financial Performance Statement and Audit Trail presents an accurate, complete, and verifiable record of all sales, revenues, and expenditures incurred by Antique Pasabuy &amp; Retail for the declared period."
         </div>
-        <div>
-          <span className="block text-slate-500 text-[9px]">Verified / Audited By:</span>
-          <div className="mt-7 border-b border-slate-400 mx-auto w-3/4" />
-          <span className="block font-bold text-slate-800 mt-1">Branch Supervisor</span>
-        </div>
-        <div>
-          <span className="block text-slate-500 text-[9px]">Approved By:</span>
-          <div className="mt-7 border-b border-slate-400 mx-auto w-3/4" />
-          <span className="block font-bold text-slate-800 mt-1">Owner / Management</span>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '30px', textAlign: 'center', fontSize: '9px' }}>
+          <div>
+            <div style={{ color: '#64748B', fontSize: '8.5px', textTransform: 'uppercase', fontWeight: 700 }}>Prepared &amp; Compiled By:</div>
+            <div style={{ marginTop: '28px', borderBottom: '1px solid #475569', width: '80%', margin: '28px auto 0' }} />
+            <div style={{ fontWeight: 800, color: '#0F172A', marginTop: '4px' }}>{preparer}</div>
+            <div style={{ color: '#64748B', fontSize: '8px' }}>Authorized POS Operator</div>
+          </div>
+
+          <div>
+            <div style={{ color: '#64748B', fontSize: '8.5px', textTransform: 'uppercase', fontWeight: 700 }}>Audited &amp; Reconciled By:</div>
+            <div style={{ marginTop: '28px', borderBottom: '1px solid #475569', width: '80%', margin: '28px auto 0' }} />
+            <div style={{ fontWeight: 800, color: '#0F172A', marginTop: '4px' }}>Branch Operations Supervisor</div>
+            <div style={{ color: '#64748B', fontSize: '8px' }}>Internal Audit</div>
+          </div>
+
+          <div>
+            <div style={{ color: '#64748B', fontSize: '8.5px', textTransform: 'uppercase', fontWeight: 700 }}>Certified &amp; Approved By:</div>
+            <div style={{ marginTop: '28px', borderBottom: '1px solid #475569', width: '80%', margin: '28px auto 0' }} />
+            <div style={{ fontWeight: 800, color: '#0F172A', marginTop: '4px' }}>Proprietor / Executive Management</div>
+            <div style={{ color: '#64748B', fontSize: '8px' }}>Antique Pasabuy Operations</div>
+          </div>
         </div>
       </footer>
     </article>
   );
 
   return (
-    <div className="financial-report-page space-y-5">
-      {/* Branded Banner */}
-      <div style={{ background: 'linear-gradient(115deg, #451323 0%, #6B1736 52%, #B0125B 100%)' }} className="relative rounded-3xl bg-[#451323] p-5 text-white shadow-xl print:hidden sm:p-6 z-20">
-        {/* Background decorative circles contained inside overflow-hidden */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
-          <div className="absolute -right-10 -top-20 h-64 w-64 rounded-full border-[30px] border-white/5" />
-          <div className="absolute right-28 -bottom-24 h-48 w-48 rounded-full bg-pink-500/10 blur-2xl" />
-        </div>
-
-        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+    <div className="financial-report-page space-y-6">
+      {/* Executive Command Header */}
+      <div className="relative rounded-2xl bg-gradient-to-r from-[#2B0D18] via-[#451323] to-[#5A1430] p-6 text-white shadow-lg print:hidden">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-pink-100">
-              <BarChart3 className="h-3.5 w-3.5" /> Financial Accounting
+            <div className="inline-flex items-center gap-2 rounded-md bg-white/10 px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase text-pink-200">
+              <Building2 className="h-3 w-3" /> Financial Operations
             </div>
-            <h2 className="text-2xl font-black tracking-tight text-white m-0">Financial Reports</h2>
-            <p className="mt-1 max-w-lg text-xs text-pink-100/80 m-0">Comprehensive P&amp;L statement, revenue breakdown, and transaction ledger.</p>
+            <h1 className="mt-2 text-2xl font-black tracking-tight text-white">Financial Performance Statement</h1>
+            <p className="mt-0.5 text-xs text-pink-100/70">
+              Audit-ready income statement, revenue margins, and real-time cash reconciliation.
+            </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Period Filter Buttons */}
-            <div className="flex flex-wrap gap-1 rounded-2xl border border-white/15 bg-black/20 p-1 text-xs font-semibold backdrop-blur-sm">
-              {([['DAILY', 'Daily'], ['WEEKLY', 'Weekly'], ['MONTHLY', 'Monthly'], ['YEARLY', 'Yearly'], ['CUSTOM', 'Custom']] as [Period, string][]).map(([value, label]) => (
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Period Filter Pill Switcher */}
+            <div className="inline-flex rounded-xl bg-black/25 p-1 text-xs font-semibold backdrop-blur-xs">
+              {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY', 'CUSTOM'] as Period[]).map(val => (
                 <button
-                  key={value}
-                  onClick={() => { setPeriod(value); setPage(1); }}
-                  style={period === value ? { backgroundColor: '#FFFFFF', color: '#6B1736' } : { color: 'rgba(255,255,255,0.9)' }}
-                  className={`rounded-xl px-3 py-1.5 font-bold transition text-xs ${period === value ? 'shadow-md' : 'hover:bg-white/10'}`}
+                  key={val}
+                  onClick={() => { setPeriod(val); setPage(1); }}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                    period === val
+                      ? 'bg-white text-[#451323] shadow-xs'
+                      : 'text-pink-100/80 hover:text-white hover:bg-white/10'
+                  }`}
                 >
-                  {label}
+                  {val.charAt(0) + val.slice(1).toLowerCase()}
                 </button>
               ))}
             </div>
 
-            {/* Custom Date Pickers */}
+            {/* Custom Range Selector */}
             {period === 'CUSTOM' && (
-              <div className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white px-3 py-1.5 text-slate-700 shadow-sm text-xs">
-                <label className="text-[10px] font-bold text-slate-500">
-                  From
-                  <input
-                    aria-label="Report start date"
-                    type="date"
-                    value={customFrom}
-                    onChange={event => { setCustomFrom(event.target.value); setPage(1); }}
-                    className="ml-2 text-xs text-slate-800 outline-none"
-                  />
-                </label>
+              <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 text-xs text-slate-800 shadow-xs">
+                <input
+                  type="date"
+                  value={customFrom}
+                  onChange={e => { setCustomFrom(e.target.value); setPage(1); }}
+                  className="font-mono text-xs outline-none"
+                />
                 <span className="text-slate-300">–</span>
-                <label className="text-[10px] font-bold text-slate-500">
-                  To
-                  <input
-                    aria-label="Report end date"
-                    type="date"
-                    value={customTo}
-                    onChange={event => { setCustomTo(event.target.value); setPage(1); }}
-                    className="ml-2 text-xs text-slate-800 outline-none"
-                  />
-                </label>
+                <input
+                  type="date"
+                  value={customTo}
+                  onChange={e => { setCustomTo(e.target.value); setPage(1); }}
+                  className="font-mono text-xs outline-none"
+                />
               </div>
             )}
 
-            {/* Professional Clean Export Dropdown */}
+            {/* 4-in-1 Export Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
-                onClick={() => setExportOpen(open => !open)}
+                onClick={() => setExportOpen(v => !v)}
                 disabled={isExportingPdf}
-                className="inline-flex items-center gap-2 rounded-xl bg-white px-3.5 py-2 text-xs font-bold text-[#6B1736] shadow-sm hover:bg-slate-50 active:scale-95 transition disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-[#451323] shadow-sm hover:bg-slate-50 active:scale-98 transition disabled:opacity-50"
               >
-                <Download className={`h-3.5 w-3.5 text-[#C90052] ${isExportingPdf ? 'animate-bounce' : ''}`} />
-                <span>{isExportingPdf ? 'Generating...' : 'Export'}</span>
+                <Download className={`h-3.5 w-3.5 text-[#C90052] ${isExportingPdf ? 'animate-spin' : ''}`} />
+                <span>{isExportingPdf ? 'Generating...' : 'Export Statement'}</span>
                 <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {exportOpen && (
-                <div className="absolute right-0 top-full mt-2 z-50 w-72 rounded-2xl border border-slate-200/90 bg-white p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-100">
-                  <div className="px-3 py-1.5 border-b border-slate-100 mb-1 flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Statement Formats</span>
-                    <span className="text-[10px] font-medium text-slate-400">{filteredRows.length} rows</span>
+                <div className="absolute right-0 top-full mt-2 z-50 w-72 rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-1.5 text-[9.5px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1 flex justify-between">
+                    <span>Export Statement</span>
+                    <span>{filteredRows.length} Rows</span>
                   </div>
 
-                  {/* 1. CSV */}
                   <button
-                    type="button"
                     onClick={exportCsv}
-                    className="w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-left hover:bg-slate-50 transition group"
+                    className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-slate-50 transition group"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 group-hover:bg-slate-200 group-hover:text-slate-900 transition">
-                        <FileText className="h-4 w-4" />
-                      </div>
+                      <FileText className="h-4 w-4 text-slate-500 group-hover:text-slate-800" />
                       <div>
-                        <div className="text-xs font-bold text-slate-800 leading-tight">CSV Spreadsheet</div>
-                        <div className="text-[10px] text-slate-400">Standard table data (.csv)</div>
+                        <div className="text-xs font-semibold text-slate-800">CSV Spreadsheet</div>
+                        <div className="text-[10px] text-slate-400">RFC 4180 raw data file</div>
                       </div>
                     </div>
-                    <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[9px] font-mono font-bold text-slate-600">CSV</span>
+                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-mono font-bold text-slate-600">.CSV</span>
                   </button>
 
-                  {/* 2. Excel */}
                   <button
-                    type="button"
                     onClick={exportExcel}
-                    className="w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-left hover:bg-slate-50 transition group"
+                    className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-slate-50 transition group"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 group-hover:bg-emerald-100 transition">
-                        <Table className="h-4 w-4" />
-                      </div>
+                      <Table className="h-4 w-4 text-emerald-600 group-hover:text-emerald-700" />
                       <div>
-                        <div className="text-xs font-bold text-slate-800 leading-tight">Excel Workbook</div>
-                        <div className="text-[10px] text-slate-400">P&amp;L summary &amp; ledger (.xls)</div>
+                        <div className="text-xs font-semibold text-slate-800">Excel Workbook</div>
+                        <div className="text-[10px] text-slate-400">P&amp;L summary &amp; ledger</div>
                       </div>
                     </div>
-                    <span className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-mono font-bold text-emerald-700">XLS</span>
+                    <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-mono font-bold text-emerald-700">.XLS</span>
                   </button>
 
-                  {/* 3. Direct PDF */}
                   <button
-                    type="button"
                     onClick={exportPdf}
                     disabled={isExportingPdf}
-                    className="w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-left hover:bg-slate-50 transition group disabled:opacity-50"
+                    className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-slate-50 transition group disabled:opacity-50"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-700 group-hover:bg-rose-100 transition">
-                        <Download className="h-4 w-4" />
-                      </div>
+                      <Download className="h-4 w-4 text-rose-600 group-hover:text-rose-700" />
                       <div>
-                        <div className="text-xs font-bold text-slate-800 leading-tight">Download PDF</div>
-                        <div className="text-[10px] text-slate-400">Official statement with logo (.pdf)</div>
+                        <div className="text-xs font-semibold text-slate-800">Download PDF Statement</div>
+                        <div className="text-[10px] text-slate-400">Official statement with logo</div>
                       </div>
                     </div>
-                    <span className="rounded border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[9px] font-mono font-bold text-rose-700">PDF</span>
+                    <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[9px] font-mono font-bold text-rose-700">.PDF</span>
                   </button>
 
-                  {/* 4. Print */}
                   <button
-                    type="button"
                     onClick={printReport}
-                    className="w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-left hover:bg-slate-50 transition group border-t border-slate-100 mt-1 pt-1.5"
+                    className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-slate-50 transition group border-t border-slate-100 mt-1 pt-1.5"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-50 text-[#C90052] group-hover:bg-pink-100 transition">
-                        <Printer className="h-4 w-4" />
-                      </div>
+                      <Printer className="h-4 w-4 text-[#C90052] group-hover:text-[#E60063]" />
                       <div>
-                        <div className="text-xs font-bold text-slate-800 leading-tight">Print Statement</div>
-                        <div className="text-[10px] text-slate-400">Print dialog &amp; Save as PDF</div>
+                        <div className="text-xs font-semibold text-slate-800">Print / Save as PDF</div>
+                        <div className="text-[10px] text-slate-400">System landscape preview</div>
                       </div>
                     </div>
-                    <span className="rounded border border-pink-200 bg-pink-50 px-1.5 py-0.5 text-[9px] font-mono font-bold text-[#C90052]">PRINT</span>
+                    <span className="rounded bg-pink-50 px-1.5 py-0.5 text-[9px] font-mono font-bold text-[#C90052]">PRINT</span>
                   </button>
                 </div>
               )}
@@ -730,105 +814,170 @@ export const ReportsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Period results sub-bar */}
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-xs shadow-xs print:hidden">
+      {/* Period Metadata Bar */}
+      <div className="flex flex-wrap items-center justify-between rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-xs text-slate-600 shadow-2xs print:hidden">
         <div className="flex items-center gap-2">
-          <span className="rounded-xl bg-pink-50 p-2 text-pink-700">
-            <Calendar className="h-4 w-4" />
-          </span>
-          <div>
-            <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Reporting Range</span>
-            <span className="font-extrabold text-[#451323]">{periodLabel}</span>
-          </div>
+          <Calendar className="h-4 w-4 text-[#C90052]" />
+          <span className="text-[11px] font-medium text-slate-500">Statement Reporting Period:</span>
+          <span className="font-bold text-slate-900">{periodLabel}</span>
         </div>
-        <span className="ml-auto rounded-full bg-slate-50 px-3 py-1.5 text-[10px] font-medium text-slate-500">
+        <div className="text-[11px] text-slate-400">
           Prior Comparison: {new Date(`${previousRange.from}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })} – {new Date(`${previousRange.to}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </span>
+        </div>
       </div>
 
       {!ready ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
-          Loading financial records…
+        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-xs text-slate-400">
+          Reconciling financial ledger records…
         </div>
       ) : (
         <>
-          {/* Executive KPI Metric Cards */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 print:hidden">
-            <MetricCard label="Total Sales" value={currentTotals.sales} previous={previousTotals.sales} icon={<ShoppingBag className="h-4 w-4" />} accent="pink" hint="Order totals in this period" />
-            <MetricCard label="Cost of Goods Sold" value={currentTotals.cogs} previous={previousTotals.cogs} icon={<Receipt className="h-4 w-4" />} accent="amber" hint="Purchased item costs" />
-            <MetricCard label="Gross Profit" value={currentTotals.grossProfit} previous={previousTotals.grossProfit} icon={<TrendingUp className="h-4 w-4" />} accent="emerald" hint="Sales minus item costs" />
-            <MetricCard label="Net Profit" value={currentTotals.netProfit} previous={previousTotals.netProfit} icon={<DollarSign className="h-4 w-4" />} accent={currentTotals.netProfit < 0 ? 'rose' : 'emerald'} hint="Gross profit minus expenses" />
-            <MetricCard label="Total Expenses" value={currentTotals.expenses} previous={previousTotals.expenses} icon={<Wallet className="h-4 w-4" />} accent="rose" hint="Recorded operating expenses" />
-            <MetricCard label="Collected Payments" value={currentTotals.collected} previous={previousTotals.collected} icon={<CreditCard className="h-4 w-4" />} accent="blue" hint="Payment records received in period" />
-            <MetricCard label="Outstanding Payments" value={currentTotals.outstanding} previous={previousTotals.outstanding} icon={<Receipt className="h-4 w-4" />} accent="orange" hint="Balances due on orders created in period" />
+          {/* Executive FinTech Metric Cards (Clean, high-contrast, no AI slop) */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 print:hidden">
+            <MetricCard
+              label="Gross Sales"
+              value={currentTotals.sales}
+              previous={previousTotals.sales}
+              icon={<ShoppingBag className="h-4 w-4 text-slate-600" />}
+              hint="Gross merchandise revenue"
+            />
+            <MetricCard
+              label="Cost of Goods (COGS)"
+              value={currentTotals.cogs}
+              previous={previousTotals.cogs}
+              icon={<Receipt className="h-4 w-4 text-slate-600" />}
+              hint="Direct item purchasing cost"
+            />
+            <MetricCard
+              label="Gross Operating Profit"
+              value={currentTotals.grossProfit}
+              previous={previousTotals.grossProfit}
+              icon={<TrendingUp className="h-4 w-4 text-slate-600" />}
+              hint="Sales revenue less COGS"
+            />
+            <MetricCard
+              label="Net Operating Income"
+              value={currentTotals.netProfit}
+              previous={previousTotals.netProfit}
+              icon={<DollarSign className="h-4 w-4 text-slate-600" />}
+              hint="After operational expenses"
+              highlight
+            />
           </div>
 
-          {/* Comparison and Profit Breakdown */}
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3 print:hidden">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-2">
-              <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+          {/* Secondary Financial Indicators */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 print:hidden">
+            <MetricCard
+              label="Operating Expenses"
+              value={currentTotals.expenses}
+              previous={previousTotals.expenses}
+              icon={<Wallet className="h-4 w-4 text-slate-600" />}
+              hint="Logged operational costs"
+              isExpense
+            />
+            <MetricCard
+              label="Cash Collections"
+              value={currentTotals.collected}
+              previous={previousTotals.collected}
+              icon={<CreditCard className="h-4 w-4 text-slate-600" />}
+              hint="Payments received in period"
+            />
+            <MetricCard
+              label="Accounts Receivable"
+              value={currentTotals.outstanding}
+              previous={previousTotals.outstanding}
+              icon={<Receipt className="h-4 w-4 text-slate-600" />}
+              hint="Uncollected customer balances"
+            />
+          </div>
+
+          {/* Income Statement & Period Comparison Section */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 print:hidden">
+            {/* P&L Breakdown Table */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs">
+              <div className="border-b border-slate-100 pb-3 mb-3">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">Statement of Profit &amp; Loss</h3>
+                <p className="text-[11px] text-slate-400">Standard accounting performance calculation</p>
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="flex justify-between py-1 border-b border-slate-50">
+                  <span className="text-slate-600">Gross Sales Revenue</span>
+                  <span className="font-mono font-bold text-slate-900">{peso(currentTotals.sales)}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-50">
+                  <span className="text-slate-600">Less: Cost of Goods Sold</span>
+                  <span className="font-mono text-slate-500">({peso(currentTotals.cogs)})</span>
+                </div>
+                <div className="flex justify-between py-1.5 bg-slate-50 px-2 rounded-lg font-bold">
+                  <span className="text-slate-800">Gross Operating Profit</span>
+                  <span className="font-mono text-slate-900">{peso(currentTotals.grossProfit)}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-slate-50">
+                  <span className="text-slate-600">Less: Operating Expenses</span>
+                  <span className="font-mono text-rose-600">({peso(currentTotals.expenses)})</span>
+                </div>
+                <div className="flex justify-between py-2 border-t-2 border-b-2 border-slate-900 font-black text-sm mt-3">
+                  <span className="text-slate-900 uppercase tracking-tight">Net Profit / (Loss)</span>
+                  <span className={`font-mono ${currentTotals.netProfit < 0 ? 'text-rose-600' : 'text-slate-950'}`}>
+                    {peso(currentTotals.netProfit)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Performance Comparison Visualizer */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs lg:col-span-2">
+              <div className="border-b border-slate-100 pb-3 mb-3 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Period comparison</h3>
-                  <p className="text-[11px] text-slate-500">See how this period compares with the one before it</p>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">Period Variance Analysis</h3>
+                  <p className="text-[11px] text-slate-400">Performance vs previous equal-length timeframe</p>
                 </div>
-                <div className="flex gap-3 rounded-full bg-slate-50 px-3 py-1.5 text-[10px] font-semibold">
-                  <span className="flex items-center gap-1.5 text-slate-600">
-                    <i style={{ backgroundColor: '#E6005C' }} className="h-2.5 w-2.5 rounded-full" />Current
+                <div className="flex items-center gap-3 text-[10px] font-semibold">
+                  <span className="flex items-center gap-1.5 text-slate-700">
+                    <span className="h-2 w-2 rounded-full bg-[#451323]" /> Current Period
                   </span>
-                  <span className="flex items-center gap-1.5 text-slate-500">
-                    <i style={{ backgroundColor: '#CBD5E1' }} className="h-2.5 w-2.5 rounded-full" />Previous
+                  <span className="flex items-center gap-1.5 text-slate-400">
+                    <span className="h-2 w-2 rounded-full bg-slate-300" /> Prior Period
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <CompareBar label="Sales" current={currentTotals.sales} previous={previousTotals.sales} color="#E6005C" />
-                <CompareBar label="Expenses" current={currentTotals.expenses} previous={previousTotals.expenses} color="#F97373" />
-                <CompareBar label="Gross profit" current={currentTotals.grossProfit} previous={previousTotals.grossProfit} color="#10B981" />
-                <CompareBar label="Collected" current={currentTotals.collected} previous={previousTotals.collected} color="#3B82F6" />
-              </div>
-            </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-900">Profit summary</h3>
-              <p className="mt-1 text-[11px] text-slate-500">How this period’s result is calculated</p>
-              <div className="mt-4 space-y-3 text-xs">
-                <SummaryLine label="Total sales" value={currentTotals.sales} />
-                <SummaryLine label="Cost of goods sold" value={-currentTotals.cogs} />
-                <div className="border-t border-slate-100 pt-3">
-                  <SummaryLine label="Gross profit" value={currentTotals.grossProfit} strong />
-                </div>
-                <SummaryLine label="Expenses" value={-currentTotals.expenses} />
-                <div className="border-t border-slate-100 pt-3">
-                  <SummaryLine label="Net profit" value={currentTotals.netProfit} strong pink />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <ModernCompareCard label="Sales Revenue" current={currentTotals.sales} previous={previousTotals.sales} color="#451323" />
+                <ModernCompareCard label="Gross Profit" current={currentTotals.grossProfit} previous={previousTotals.grossProfit} color="#059669" />
+                <ModernCompareCard label="Operating Expenses" current={currentTotals.expenses} previous={previousTotals.expenses} color="#DC2626" />
+                <ModernCompareCard label="Cash Collected" current={currentTotals.collected} previous={previousTotals.collected} color="#2563EB" />
               </div>
             </div>
           </div>
 
-          {/* Transactions Ledger Card */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm print:hidden">
-            <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          {/* Transaction Ledger Table */}
+          <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden print:hidden">
+            <div className="border-b border-slate-100 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Transaction history</h3>
-                <p className="text-[11px] text-slate-500">Orders, payments received, and expenses for {periodLabel}</p>
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">Transaction Audit Register</h3>
+                <p className="text-[11px] text-slate-400">Chronological transaction events logged in period</p>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
+
+              <div className="flex items-center gap-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
                   <input
+                    type="text"
                     value={search}
-                    onChange={event => { setSearch(event.target.value); setPage(1); }}
-                    placeholder="Search references, customers…"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs outline-none focus:border-pink-300 sm:w-64"
+                    onChange={e => { setSearch(e.target.value); setPage(1); }}
+                    placeholder="Search reference, customer..."
+                    className="w-56 rounded-lg border border-slate-200 bg-slate-50/50 py-1.5 pl-8 pr-3 text-xs outline-none focus:border-slate-400 focus:bg-white"
                   />
                 </div>
+
                 <select
-                  aria-label="Filter transaction type"
                   value={recordType}
-                  onChange={event => { setRecordType(event.target.value as RecordType); setPage(1); }}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+                  onChange={e => { setRecordType(e.target.value as RecordType); setPage(1); }}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none"
                 >
-                  <option value="ALL">All transaction types</option>
+                  <option value="ALL">All Event Types</option>
                   <option value="ORDER">Orders</option>
                   <option value="PAYMENT">Payments</option>
                   <option value="EXPENSE">Expenses</option>
@@ -837,47 +986,61 @@ export const ReportsView: React.FC = () => {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[850px] text-left text-xs">
-                <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-4 py-3">Date &amp; Time</th>
-                    <th className="px-4 py-3">Reference</th>
-                    <th className="px-4 py-3">Type</th>
-                    <th className="px-4 py-3">Customer / Description</th>
-                    <th className="px-4 py-3">Related Order / Category</th>
-                    <th className="px-4 py-3">Payment Method</th>
-                    <th className="px-4 py-3 text-right">Amount</th>
-                    <th className="px-4 py-3">Status</th>
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/75 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="px-4 py-2.5">Timestamp</th>
+                    <th className="px-4 py-2.5">Reference ID</th>
+                    <th className="px-4 py-2.5 text-center">Type</th>
+                    <th className="px-4 py-2.5">Customer / Payee Particulars</th>
+                    <th className="px-4 py-2.5">Category / Ref</th>
+                    <th className="px-4 py-2.5">Payment Method</th>
+                    <th className="px-4 py-2.5 text-right">Amount (PHP)</th>
+                    <th className="px-4 py-2.5 text-center">Reconciliation</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {pageRows.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
-                        No transactions match this period and search.
+                      <td colSpan={8} className="py-12 text-center text-xs text-slate-400">
+                        No transactions found for the specified period and search filters.
                       </td>
                     </tr>
                   ) : (
                     pageRows.map(row => (
-                      <tr key={row.id} className="hover:bg-pink-50/30">
-                        <td className="whitespace-nowrap px-4 py-3 text-slate-500">
+                      <tr key={row.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="px-4 py-2.5 text-slate-500 font-mono text-[11px] whitespace-nowrap">
                           {new Date(row.date).toLocaleString('en-PH')}
                         </td>
-                        <td className="font-semibold text-slate-800 px-4 py-3">{row.reference}</td>
-                        <td className="px-4 py-3">
-                          <span className={`rounded-full px-2 py-1 text-[9px] font-bold ${
-                            row.type === 'ORDER' ? 'bg-pink-50 text-pink-800' :
-                            row.type === 'PAYMENT' ? 'bg-emerald-50 text-emerald-800' :
-                            'bg-amber-50 text-amber-800'
+                        <td className="px-4 py-2.5 font-mono font-bold text-slate-800">
+                          {row.reference}
+                        </td>
+                        <td className="px-4 py-2.5 text-center">
+                          <span className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase ${
+                            row.type === 'ORDER' ? 'bg-slate-100 text-slate-800' :
+                            row.type === 'PAYMENT' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
+                            'bg-amber-50 text-amber-800 border border-amber-200'
                           }`}>
                             {row.type}
                           </span>
                         </td>
-                        <td className="max-w-[200px] truncate px-4 py-3 text-slate-700">{row.description}</td>
-                        <td className="px-4 py-3 text-slate-500">{row.relatedOrder || '—'}</td>
-                        <td className="px-4 py-3 text-slate-500">{row.method}</td>
-                        <td className="px-4 py-3 text-right font-bold text-slate-900">{peso(row.amount)}</td>
-                        <td className="px-4 py-3 text-slate-600">{row.status}</td>
+                        <td className="px-4 py-2.5 font-medium text-slate-900 max-w-[200px] truncate">
+                          {row.description}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-500">
+                          {row.relatedOrder || '—'}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-600">
+                          {row.method}
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-mono font-bold text-slate-900">
+                          {peso(row.amount)}
+                        </td>
+                        <td className="px-4 py-2.5 text-center">
+                          <span className="text-[10px] font-semibold uppercase text-slate-500">
+                            {row.status}
+                          </span>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -885,21 +1048,22 @@ export const ReportsView: React.FC = () => {
               </table>
             </div>
 
-            <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-[11px] text-slate-500">
-              <span>{filteredRows.length ? `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, filteredRows.length)} of ${filteredRows.length}` : '0 transactions'}</span>
-              <div className="flex items-center gap-2">
+            {/* Pagination */}
+            <div className="border-t border-slate-100 px-4 py-3 flex items-center justify-between text-xs text-slate-500">
+              <span>Showing {filteredRows.length ? `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, filteredRows.length)} of ${filteredRows.length} events` : '0 events'}</span>
+              <div className="flex items-center gap-1.5">
                 <button
                   disabled={page <= 1}
-                  onClick={() => setPage(page - 1)}
-                  className="rounded-lg border border-slate-200 px-3 py-1.5 font-semibold disabled:opacity-40"
+                  onClick={() => setPage(p => p - 1)}
+                  className="rounded border border-slate-200 px-2.5 py-1 text-xs font-semibold disabled:opacity-30 hover:bg-slate-50"
                 >
-                  Previous
+                  Prev
                 </button>
-                <span>Page {page} of {pageCount}</span>
+                <span className="px-2 text-slate-400">Page {page} of {pageCount}</span>
                 <button
                   disabled={page >= pageCount}
-                  onClick={() => setPage(page + 1)}
-                  className="rounded-lg border border-slate-200 px-3 py-1.5 font-semibold disabled:opacity-40"
+                  onClick={() => setPage(p => p + 1)}
+                  className="rounded border border-slate-200 px-2.5 py-1 text-xs font-semibold disabled:opacity-30 hover:bg-slate-50"
                 >
                   Next
                 </button>
@@ -909,7 +1073,7 @@ export const ReportsView: React.FC = () => {
         </>
       )}
 
-      {/* Portal render for Executive Print & PDF generation */}
+      {/* Portal Mount for Clean Print & PDF Rendering */}
       {createPortal(renderPrintDocument(), document.body)}
     </div>
   );
@@ -934,92 +1098,89 @@ function escapeHtml(value: string) {
   }[character] || character));
 }
 
-function MetricCard({ label, value, previous, icon, accent, hint }: {
+function MetricCard({
+  label,
+  value,
+  previous,
+  icon,
+  hint,
+  highlight = false,
+  isExpense = false
+}: {
   label: string;
   value: number;
   previous: number;
   icon: React.ReactNode;
-  accent: string;
   hint: string;
+  highlight?: boolean;
+  isExpense?: boolean;
 }) {
-  const styles: Record<string, { icon: string; stripe: string; wash: string }> = {
-    pink: { icon: 'border-pink-100 bg-pink-50 text-pink-700', stripe: '#E6005C', wash: 'bg-pink-50/40' },
-    amber: { icon: 'border-amber-100 bg-amber-50 text-amber-700', stripe: '#F59E0B', wash: 'bg-amber-50/30' },
-    emerald: { icon: 'border-emerald-100 bg-emerald-50 text-emerald-700', stripe: '#10B981', wash: 'bg-emerald-50/30' },
-    rose: { icon: 'border-rose-100 bg-rose-50 text-rose-700', stripe: '#F43F5E', wash: 'bg-rose-50/30' },
-    blue: { icon: 'border-blue-100 bg-blue-50 text-blue-700', stripe: '#3B82F6', wash: 'bg-blue-50/30' },
-    orange: { icon: 'border-orange-100 bg-orange-50 text-orange-700', stripe: '#F97316', wash: 'bg-orange-50/30' }
-  };
   const delta = value - previous;
+  const isPositive = isExpense ? delta <= 0 : delta >= 0;
+
   return (
-    <div className={`group relative overflow-hidden rounded-2xl border border-slate-200/80 ${styles[accent].wash} bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}>
-      <div style={{ backgroundColor: styles[accent].stripe }} className="absolute inset-x-0 top-0 h-1" />
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</span>
-        <span className={`rounded-xl border p-2.5 transition-transform group-hover:scale-105 ${styles[accent].icon}`}>{icon}</span>
+    <div className={`rounded-xl border p-4 transition-all ${
+      highlight
+        ? 'border-[#0F172A] bg-white shadow-xs'
+        : 'border-slate-200 bg-white hover:border-slate-300'
+    }`}>
+      <div className="flex items-center justify-between text-slate-500">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
+        <div className="rounded-md bg-slate-50 p-1.5">{icon}</div>
       </div>
-      <div className="mt-3 truncate text-[26px] font-black tracking-tight text-slate-900">{peso(value)}</div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
-        <span className="text-[10px] text-slate-500">{hint}</span>
-        <span className={`whitespace-nowrap rounded-full px-2 py-1 text-[9px] font-extrabold ${delta >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-          {delta >= 0 ? '↑' : '↓'} {peso(Math.abs(delta))}
+
+      <div className={`mt-2 font-mono text-2xl font-black tracking-tight ${
+        highlight && value < 0 ? 'text-rose-600' : 'text-slate-900'
+      }`}>
+        {peso(value)}
+      </div>
+
+      <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[10px]">
+        <span className="text-slate-400">{hint}</span>
+        <span className={`inline-flex items-center font-mono font-bold ${
+          isPositive ? 'text-emerald-700' : 'text-rose-600'
+        }`}>
+          {delta >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+          {peso(Math.abs(delta))}
         </span>
       </div>
     </div>
   );
 }
 
-function CompareBar({ label, current, previous, color }: { label: string; current: number; previous: number; color: string }) {
-  const maximum = Math.max(current, previous, 1);
-  const currentWidth = Math.max(current > 0 ? 5 : 0, (current / maximum) * 100);
-  const previousWidth = Math.max(previous > 0 ? 5 : 0, (previous / maximum) * 100);
-  return (
-    <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-3.5 transition-shadow hover:shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs font-extrabold text-slate-800">{label}</span>
-        <span className="rounded-full bg-white px-2 py-1 text-[9px] font-bold text-slate-500 shadow-sm">vs prior</span>
-      </div>
-      <div className="space-y-3">
-        <div>
-          <div className="mb-1 flex items-center justify-between text-[10px]">
-            <span className="font-semibold text-slate-500">Current</span>
-            <span className="font-extrabold text-slate-800">{peso(current)}</span>
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-white shadow-inner">
-            <div
-              role="img"
-              aria-label={`${label} current ${peso(current)}`}
-              title={`Current: ${peso(current)}`}
-              style={{ width: `${currentWidth}%`, backgroundColor: color }}
-              className="h-full rounded-full transition-all duration-500"
-            />
-          </div>
-        </div>
-        <div>
-          <div className="mb-1 flex items-center justify-between text-[10px]">
-            <span className="font-semibold text-slate-400">Previous</span>
-            <span className="font-bold text-slate-500">{peso(previous)}</span>
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-white shadow-inner">
-            <div
-              role="img"
-              aria-label={`${label} previous ${peso(previous)}`}
-              title={`Previous: ${peso(previous)}`}
-              style={{ width: `${previousWidth}%`, backgroundColor: '#CBD5E1' }}
-              className="h-full rounded-full transition-all duration-500"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+function ModernCompareCard({
+  label,
+  current,
+  previous,
+  color
+}: {
+  label: string;
+  current: number;
+  previous: number;
+  color: string;
+}) {
+  const max = Math.max(current, previous, 1);
+  const currentPct = Math.max(5, (current / max) * 100);
+  const prevPct = Math.max(5, (previous / max) * 100);
 
-function SummaryLine({ label, value, strong = false, pink = false }: { label: string; value: number; strong?: boolean; pink?: boolean }) {
   return (
-    <div className={`flex items-center justify-between gap-2 ${strong ? 'font-bold' : ''}`}>
-      <span className={strong ? 'text-slate-800' : 'text-slate-500'}>{label}</span>
-      <span className={pink ? 'text-pink-700' : value < 0 ? 'text-rose-600' : 'text-slate-900'}>{peso(value)}</span>
+    <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+      <div className="flex justify-between items-center text-xs font-bold text-slate-800 mb-2">
+        <span>{label}</span>
+        <span className="font-mono text-slate-900">{peso(current)}</span>
+      </div>
+
+      <div className="space-y-1.5">
+        <div>
+          <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+            <div style={{ width: `${currentPct}%`, backgroundColor: color }} className="h-full rounded-full" />
+          </div>
+        </div>
+        <div className="flex justify-between text-[9px] text-slate-400 font-mono">
+          <span>Current: {peso(current)}</span>
+          <span>Prior: {peso(previous)}</span>
+        </div>
+      </div>
     </div>
   );
 }

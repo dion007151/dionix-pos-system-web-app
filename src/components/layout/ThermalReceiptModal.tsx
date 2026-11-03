@@ -218,8 +218,8 @@ export const ThermalReceiptModal: React.FC = () => {
             </h2>
             <p className="text-[10px] text-gray-600">
               {isPasabuy
-                  ? (businessInfo.address || 'San Angel, San Jose de Buenavista, Antique 5700')
-                  : 'Main St., San Jose de Buenavista'}
+                ? (businessInfo.address || 'San Angel, San Jose de Buenavista, Antique 5700')
+                : 'Main St., San Jose de Buenavista'}
             </p>
             <p className="text-[10px] text-gray-600">Mobile: {businessInfo.phone || '09054853573'}</p>
             {isPasabuy && businessInfo.email && <p className="text-[10px] text-gray-600">{businessInfo.email}</p>}

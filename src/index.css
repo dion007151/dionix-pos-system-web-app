@@ -712,6 +712,7 @@
 }
 
 @media print {
+
   body.printing-buying-list,
   body:has(#printable-buying-list) {
     background: #fff !important;
@@ -727,10 +728,10 @@
   }
 
   /* Completely eliminate anything outside active print document from document flow */
-  body.printing-buying-list > *:not(#printable-buying-list),
-  body:has(#printable-buying-list) > *:not(#printable-buying-list),
-  body.printing-financial-report > *:not(#printable-financial-report),
-  body:has(#printable-financial-report) > *:not(#printable-financial-report),
+  body.printing-buying-list>*:not(#printable-buying-list),
+  body:has(#printable-buying-list)>*:not(#printable-buying-list),
+  body.printing-financial-report>*:not(#printable-financial-report),
+  body:has(#printable-financial-report)>*:not(#printable-financial-report),
   .print-modal-backdrop {
     display: none !important;
   }
