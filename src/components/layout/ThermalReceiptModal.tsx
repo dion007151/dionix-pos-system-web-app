@@ -51,6 +51,10 @@ export const ThermalReceiptModal: React.FC = () => {
     const pageStyle = paperWidth === '58mm' ? '58mm auto' : '80mm auto';
     const fontSize = paperWidth === '58mm' ? '10px' : '11px';
 
+    const parentStyles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      .map(el => el.outerHTML)
+      .join('\n');
+
     doc.open();
     doc.write(`
       <!DOCTYPE html>
@@ -58,64 +62,77 @@ export const ThermalReceiptModal: React.FC = () => {
         <head>
           <meta charset="utf-8" />
           <title>Receipt - ${order ? order.orderNo : restoOrder?.orderNo || 'POS'}</title>
+          ${parentStyles}
           <style>
             @page {
               size: ${pageStyle};
-              margin: 0;
+              margin: 2mm 0;
             }
             * {
               box-sizing: border-box;
               margin: 0;
               padding: 0;
-              font-family: 'Courier New', Courier, monospace;
             }
             body {
               width: ${printWidth};
               max-width: 100%;
               margin: 0 auto;
-              padding: 3mm 1.5mm;
+              padding: 2mm 1.5mm;
               font-size: ${fontSize};
-              line-height: 1.25;
-              color: #000;
-              background: #fff;
+              line-height: 1.35;
+              color: #000 !important;
+              background: #fff !important;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-            .text-center { text-align: center; }
-            .text-right { text-align: right; }
-            .font-bold { font-weight: bold; }
-            .uppercase { text-transform: uppercase; }
-            .border-dashed {
-              border-top: 1px dashed #000;
-              margin: 4px 0;
-              height: 0;
-            }
-            .flex-between {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              gap: 4px;
-            }
-            .item-row {
-              display: flex;
-              justify-content: space-between;
-              padding: 2px 0;
-            }
-            .item-name {
-              flex: 1;
-              padding: 0 4px;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-            .line-through { text-decoration: line-through; }
-            .badge {
-              display: inline-block;
-              font-size: 8px;
-              font-weight: bold;
-              border: 1px solid #000;
-              padding: 0 2px;
-              border-radius: 2px;
-            }
+            /* Grid and Flex Layout guarantees */
+            .grid { display: grid !important; }
+            .grid-cols-12 { display: grid !important; grid-template-columns: repeat(12, minmax(0, 1fr)) !important; }
+            .col-span-2 { grid-column: span 2 / span 2 !important; }
+            .col-span-4 { grid-column: span 4 / span 4 !important; }
+            .col-span-6 { grid-column: span 6 / span 6 !important; }
+            .flex { display: flex !important; }
+            .justify-between { display: flex !important; justify-content: space-between !important; }
+            .items-center { align-items: center !important; }
+            .flex-wrap { flex-wrap: wrap !important; }
+            .gap-1 { gap: 0.25rem !important; }
+            .gap-2 { gap: 0.5rem !important; }
+            
+            /* Spacing */
+            .space-y-0\\.5 > * + * { margin-top: 2px !important; }
+            .space-y-1 > * + * { margin-top: 4px !important; }
+            .my-2 { margin-top: 8px !important; margin-bottom: 8px !important; }
+            .my-3 { margin-top: 12px !important; margin-bottom: 12px !important; }
+            .py-1 { padding-top: 3px !important; padding-bottom: 3px !important; }
+            .pt-1 { padding-top: 4px !important; }
+            .pb-1 { padding-bottom: 3px !important; }
+            .pr-1 { padding-right: 4px !important; }
+            
+            /* Text & Typography */
+            .text-center { text-align: center !important; }
+            .text-right { text-align: right !important; }
+            .text-left { text-align: left !important; }
+            .font-bold { font-weight: 700 !important; }
+            .font-semibold { font-weight: 600 !important; }
+            .font-medium { font-weight: 500 !important; }
+            .uppercase { text-transform: uppercase !important; }
+            .truncate { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+            .line-through { text-decoration: line-through !important; }
+            .text-xs { font-size: 11px !important; }
+            .text-sm { font-size: 13px !important; }
+            .text-\\[9px\\] { font-size: 9px !important; }
+            .text-\\[10px\\] { font-size: 10px !important; }
+            .text-\\[11px\\] { font-size: 11px !important; }
+            .text-gray-700, .text-gray-600, .text-gray-500 { color: #333 !important; }
+            .text-black { color: #000 !important; }
+
+            /* Borders */
+            .border-t { border-top-width: 1px !important; border-top-style: solid !important; }
+            .border-b { border-bottom-width: 1px !important; border-bottom-style: solid !important; }
+            .border-dashed { border-style: dashed !important; border-color: #666 !important; }
+            .border-gray-400, .border-gray-300 { border-color: #777 !important; }
+            .border-gray-100 { border-color: #e5e7eb !important; }
           </style>
         </head>
         <body>
