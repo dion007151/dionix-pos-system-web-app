@@ -5,6 +5,9 @@ export interface SupabaseConfig {
   anonKey: string;
 }
 
+export const DEFAULT_SUPABASE_URL = 'https://hgoylqrxgjypmfofbxzg.supabase.co';
+export const DEFAULT_SUPABASE_KEY = 'sb_publishable_VdIwOrLH_Jep9M5VDr17mQ_anyKDOE8';
+
 const STORAGE_KEY = 'antique_pasabuy_supabase_config';
 
 export function getSavedSupabaseConfig(): SupabaseConfig | null {
@@ -21,6 +24,11 @@ export function getSavedSupabaseConfig(): SupabaseConfig | null {
       if (parsed.url && parsed.anonKey) {
         return parsed;
       }
+    }
+
+    // Default configuration for automatic multi-device sync
+    if (DEFAULT_SUPABASE_URL && DEFAULT_SUPABASE_KEY) {
+      return { url: DEFAULT_SUPABASE_URL, anonKey: DEFAULT_SUPABASE_KEY };
     }
   } catch (err) {
     console.warn('Failed to read Supabase config:', err);
