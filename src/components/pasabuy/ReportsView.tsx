@@ -663,7 +663,7 @@ export const ReportsView: React.FC = () => {
   return (
     <div className="financial-report-page space-y-6">
       {/* Hero Header in Rich Burgundy to Antique Pasabuy Pink Gradient */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#451323] via-[#7B113A] to-[#C90052] p-6 text-white shadow-xl print:hidden">
+      <div className="relative rounded-3xl bg-gradient-to-r from-[#451323] via-[#7B113A] to-[#C90052] p-6 text-white shadow-xl print:hidden">
         {/* Subtle decorative circles for depth */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
           <div className="absolute -right-10 -top-20 h-64 w-64 rounded-full border-[30px] border-white/5" />
@@ -719,7 +719,7 @@ export const ReportsView: React.FC = () => {
             )}
 
             {/* 4-in-1 Export Dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative z-30" ref={dropdownRef}>
               <button
                 type="button"
                 onClick={() => setExportOpen(v => !v)}
